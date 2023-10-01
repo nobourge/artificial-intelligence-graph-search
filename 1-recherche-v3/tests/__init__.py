@@ -7,7 +7,14 @@ import cv2
 from lle import World
 # Create an instance of the World class
 #TypeError: World.__new__() missing 1 required positional argument: 'map_str'
-world_instance = World("cartes/1_agent/vide")
+# map is in cartes/1_agent/vide
+read_file = open("cartes/1_agent/vide", "r")
+map_str = read_file.read()
+read_file.close()
+# 
+
+print("map_str: \n", map_str)
+world_instance = World(map_str)
 # img = World.get_image()
 img = world_instance.get_image()
 # img = World.get_image("cartes/1_agent/vide")
