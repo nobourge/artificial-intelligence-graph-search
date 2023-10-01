@@ -7,7 +7,7 @@ from problem import SearchProblem
 
 @dataclass
 class Solution:
-    actions: list[list[Action]]
+    actions: list[tuple[Action]]
 
     @property
     def n_steps(self) -> int:

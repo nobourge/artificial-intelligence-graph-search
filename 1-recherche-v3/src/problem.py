@@ -48,7 +48,7 @@ class SimpleSearchProblem(SearchProblem[WorldState]):
         raise NotImplementedError()
 
     def heuristic(self, state: WorldState) -> float:
-        """Manhattan distance for each agent to its goal"""
+        """Manhattan distance for each agent to the closest exit"""
         raise NotImplementedError()
 
 

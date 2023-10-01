@@ -1,5 +1,5 @@
 from lle import World, Action
-from search import astar
+from search import bfs
 from problem import SimpleSearchProblem
 
 from .utils import check_world_done
@@ -8,7 +8,7 @@ from .utils import check_world_done
 def test_1_agent_empty():
     world = World.from_file("cartes/1_agent/vide")
     problem = SimpleSearchProblem(world)
-    solution = astar(problem)
+    solution = bfs(problem)
     assert solution.n_steps == 8
     assert solution.actions.count((Action.EAST,)) == 6
     assert solution.actions.count((Action.SOUTH,)) == 2
@@ -18,7 +18,7 @@ def test_1_agent_empty():
 def test_1_agent_zigzag():
     world = World.from_file("cartes/1_agent/zigzag")
     problem = SimpleSearchProblem(world)
-    solution = astar(problem)
+    solution = bfs(problem)
     assert solution.n_steps == 19
     assert solution.actions == [
         (Action.NORTH,),
@@ -47,34 +47,37 @@ def test_1_agent_zigzag():
 def test_1_agent_impossible():
     world = World.from_file("cartes/1_agent/impossible")
     problem = SimpleSearchProblem(world)
-    assert astar(problem) is None
+    assert bfs(problem) is None
+    assert problem.nodes_expanded > 0
 
 
 def test_2_agents_empty():
     world = World.from_file("cartes/2_agents/vide")
     problem = SimpleSearchProblem(world)
-    solution = astar(problem)
+    solution = bfs(problem)
     assert solution.n_steps == 8
     check_world_done(problem, solution)
 
 
 def test_2_agents_zigzag():
     world = World.from_file("cartes/2_agents/zigzag")
-    world.reset()
     problem = SimpleSearchProblem(world)
-    solution = astar(problem)
-    assert solution.n_steps == 15
+    solution = bfs(problem)
+    assert solution.n_steps == 12
     check_world_done(problem, solution)
 
 
 def test_2_agents_impossible():
     world = World.from_file("cartes/2_agents/impossible")
+    world.reset()
     problem = SimpleSearchProblem(world)
-    assert astar(problem) is None
+    assert bfs(problem) is None
+    assert problem.nodes_expanded > 0
 
 
 def test_level3():
     world = World.from_file("level3")
+    world.reset()
     problem = SimpleSearchProblem(world)
-    solution = astar(problem)
+    solution = bfs(problem)
     check_world_done(problem, solution)
