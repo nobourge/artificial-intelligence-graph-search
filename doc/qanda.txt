@@ -1,0 +1,8 @@
+make vscode detect poetry for click on src launch poetry shell
+total 3s
+corner search each by 1 agent
+
+report:
+graph for expanded nodes_expanded
+heuristic theres better than gem collected
+

@@ -1,7 +1,7 @@
-import sys
-sys.path.append("D:\\bourg\Documents\GitHub\\artificial-intelligence-graph-search\\1-recherche-v3\src\search.py")  # Replace "/path/to/folder" with the actual path to the directory containing search.py
-for p in sys.path:
-    print(p)
+# import sys
+# sys.path.append("D:\\bourg\Documents\GitHub\\artificial-intelligence-graph-search\\1-recherche-v3\src\search.py")  # Replace "/path/to/folder" with the actual path to the directory containing search.py
+# for p in sys.path:
+#     print(p)
 from lle import World, Action
 from search import astar
 from problem import SimpleSearchProblem

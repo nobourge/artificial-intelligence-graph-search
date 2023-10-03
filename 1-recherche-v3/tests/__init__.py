@@ -1,5 +1,5 @@
 import sys
-sys.path.append("D:\\bourg\Documents\GitHub\\artificial-intelligence-graph-search\\1-recherche-v3\src\search.py")  # Replace "/path/to/folder" with the actual path to the directory containing search.py
+sys.path.append("D:\\bourg\Documents\GitHub\\artificial-intelligence-graph-search\\1-recherche-v3\src")  # Replace "/path/to/folder" with the actual path to the directory containing search.py
 #print(sys.path) line by line
 for p in sys.path:
     print(p)
@@ -8,7 +8,7 @@ from lle import World
 # Create an instance of the World class
 #TypeError: World.__new__() missing 1 required positional argument: 'map_str'
 # map is in cartes/1_agent/vide
-read_file = open("cartes/1_agent/vide", "r")
+read_file = open("1-recherche-v3/cartes/1_agent/vide", "r")
 map_str = read_file.read()
 read_file.close()
 # 

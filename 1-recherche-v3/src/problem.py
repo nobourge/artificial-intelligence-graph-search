@@ -22,6 +22,7 @@ class SearchProblem(ABC, Generic[T]):
     @abstractmethod
     def is_goal_state(self, problem_state: T) -> bool:
         """Whether the given state is the goal state"""
+        
 
     @abstractmethod
     def get_successors(self, state: T) -> Iterable[Tuple[T, Tuple[Action, ...], float]]:

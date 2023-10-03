@@ -25,4 +25,13 @@ def bfs(problem: SearchProblem) -> Optional[Solution]:
 
 
 def astar(problem: SearchProblem) -> Optional[Solution]:
-    ...
+    print("astar")
+    # print("problem: ", problem)
+
+
+#main
+
+
+if __name__ == "__main__":
+    astar("problem")
+    
