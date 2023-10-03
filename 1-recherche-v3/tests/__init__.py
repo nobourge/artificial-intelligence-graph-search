@@ -8,7 +8,7 @@ from lle import World
 # Create an instance of the World class
 #TypeError: World.__new__() missing 1 required positional argument: 'map_str'
 # map is in cartes/1_agent/vide
-read_file = open("1-recherche-v3/cartes/1_agent/vide", "r")
+read_file = open("cartes/1_agent/vide", "r")
 map_str = read_file.read()
 read_file.close()
 # 
