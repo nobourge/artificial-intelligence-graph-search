@@ -87,7 +87,7 @@ def test_level3():
 
 #main
 if __name__ == "__main__":
-    print(sys.path)
+    # print(sys.path)
 
     test_1_agent_empty()
     test_1_agent_zigzag()
