@@ -40,13 +40,36 @@ class SearchProblem(ABC, Generic[T]):
 
     def heuristic(self, problem_state: T) -> float:
         return 0.0
+    
+    def print_state(self, problem_state: T):
+        """Print the state of the world."""
+        map_str = self.world.world_string
+        print(map_str)
 
 
 class SimpleSearchProblem(SearchProblem[WorldState]):
+
+    def each_agent_on_different_pos(self, state: WorldState) -> bool:
+        """Whether each agent is on a different position."""
+        print("each_on_different_pos()")
+        print("state", state)
+        print("state.agents_positions", state.agents_positions)
+
+        # Create a set of the agents' positions
+        agent_positions = set(state.agents_positions)  
+        # Check if the number of agents on exits is equal to the total number of agents
+        # and if each agent is on a different exit
+        return len(agent_positions) == len(state.agents_positions)
+    
     def each_agent_on_different_exit_pos(self, state: WorldState) -> bool:
         """Whether each agent is on a different exit position."""
+        print("each_agent_on_different_exit_pos()")
+        print("state", state)
+        print("state.agents_positions", state.agents_positions)
+        print("self.world.exit_pos", self.world.exit_pos)
+
         agent_positions = set(state.agents_positions)  
-        exit_positions = set(state.exit_pos())  
+        exit_positions = set(self.world.exit_pos)  
         
         # Intersect the sets to find agents that are on exit positions
         agents_on_exits = agent_positions.intersection(exit_positions)
@@ -64,7 +87,7 @@ class SimpleSearchProblem(SearchProblem[WorldState]):
 
         Hint: you can use `self.world.done()` to check if the world is done.
         """
-        # is_done means the game is over, i.e. agents can no longer perform actions. 
+        # is_done means the game is over, i.e. agents can no longer perform joint_actions. 
         #   This happens when an agent is dead or all agents are on fini tiles.
         # if world is done & agents are alive, then it is the goal state
         # is_done = self.world.done()
@@ -78,30 +101,91 @@ class SimpleSearchProblem(SearchProblem[WorldState]):
         # true if all agents are on exit tiles
         return self.each_agent_on_different_exit_pos(state)
 
+    def is_valid_joint_action(self, state: WorldState, joint_action: Tuple[Action, ...]) -> bool:
+        """Whether the given joint action is valid.
+        an action is valid if it is available for an agent 
+        and if it does not lead the agent to be on the same position as another agent"""
+        print("is_valid_joint_action()")
+        print("state", state)
+        print("joint_action", joint_action)
+        print("state.agents_positions", state.agents_positions)
+        #todo: check if the joint action is valid
+
+
+        # # calculate agent positions after applying the joint action
+        # agent_positions_after_joint_action = []
+        # for i, agent_pos in enumerate(state.agents_positions):
+
+        # # if 
+        return False
+    
+    def is_valid_state(self, state: WorldState) -> bool:
+        """Whether the given state is valid."""
+        print("is_valid_state()")
+        print("state", state)
+        print("state.agents_positions", state.agents_positions)
+
+        # Create a set of the agents' positions
+        agent_positions_set = set(state.agents_positions)  
+        # Check if the length of the set is equal to the total number of agents
+        return len(agent_positions_set) == len(state.agents_positions)
+
+    
+    def get_valid_joint_actions(self, state: WorldState) -> Iterable[Tuple[Action, ...]]:
+        """Yield all possible joint actions that can be taken from the given state.
+        Hint: you can use `self.world.available_actions()` to get the available actions for each agent.
+        """
+        print("available_actions", self.world.available_actions())
+        # For each possible joint actions set (i.e. cartesian product of the agents' actions)
+        for joint_actions in product(*self.world.available_actions()):
+            print("joint_actions", joint_actions)
+            # Create a copy of the world state to avoid modifying the original state
+            World_copy = copy.deepcopy(self.world)
+            # Apply the joint_actions to the new world 
+            World_copy.step(list(joint_actions))
+            new_state = World_copy.get_state()
+            # Check if the new state is valid
+            if self.is_valid_state(new_state):
+                # If so, yield the joint_actions
+                yield joint_actions
+
     def get_successors(self, state: WorldState) -> Iterable[Tuple[WorldState, Tuple[Action, ...], float]]:
         # - N'oubliez pas de jeter un oeil aux méthodes de a classe World (set_state, done, step, available_actions, ...)
         # - Vous aurez aussi peut-être besoin de `from itertools import product`
         """Yield all possible states that can be reached from the given world state."""
+        print("get_successors()")
         self.nodes_expanded += 1
 
-        for actions in product(*self.world.available_actions()):
+        # valid_joint_actions = self.get_valid_joint_actions(state)
+        # print("valid_joint_actions", valid_joint_actions)
+        
+        # For each possible joint actions set (i.e. cartesian product of the agents' actions)
+        for joint_actions in product(*self.world.available_actions()):
+        # for joint_actions in product(*valid_joint_actions):
+            print("joint_actions", joint_actions)
             # Create a copy of the world state to avoid modifying the original state
             # new_state = self.world.copy()
-            new_state = copy.deepcopy(state)
-            # Apply the actions to the new state
-            for agent_id, action in enumerate(actions):
-                new_state.step(agent_id, action)
-            # Compute the cost of the new state
-            cost = self.heuristic(new_state)
-            # Yield the new state, the actions taken, and the cost
-            yield new_state, actions, cost
+            new_world = copy.deepcopy(self.world)
+            print("new_world", new_world)
+            # Apply the joint_actions to the new world 
+            self.world.step(list(joint_actions))
+            new_state = self.world.get_state()
+
+            if self.is_valid_state(new_state):
+
+                # Compute the cost of the new state
+                cost = self.heuristic(new_state)
+                # Yield the new state, the joint_actions taken, and the cost
+                yield new_state, joint_actions, cost
 
     def manhattan_distance(self, pos1: Position, pos2: Position) -> float:
         """The Manhattan distance between two positions"""
         return abs(pos1[0] - pos2[0]) + abs(pos1[1] - pos2[1])
     
     # def agent_closest_exit(self, agent_pos: Position) -> float:
-    def min_distance_pairing(list_1, list_2):
+    def min_distance_pairing(self
+                             , list_1
+                             , list_2):
         # Create a cost matrix
         cost_matrix = np.zeros((len(list_1), len(list_2)))
         for i, point1 in enumerate(list_1):
@@ -127,10 +211,12 @@ class SimpleSearchProblem(SearchProblem[WorldState]):
     def heuristic(self, state: WorldState) -> float:
         """Manhattan distance for each agent to the closest exit"""
         agent_positions = self.world.agents_positions
+        print("agent_positions", agent_positions)
         exit_positions = self.world.exit_pos
+        print("exit_positions", exit_positions)
         # for each agent, compute its closest exit, if exit 
-        min_total_distance = self.min_distance_pairing(agent_positions, exit_positions)[2]
-        return min_total_distance
+        min_distance_pairing_result = self.min_distance_pairing(agent_positions, exit_positions)
+        return min_distance_pairing_result[2]
 
 class CornerProblemState:
     ...
