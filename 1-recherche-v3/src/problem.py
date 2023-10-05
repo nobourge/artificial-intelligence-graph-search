@@ -23,6 +23,8 @@ class SearchProblem(ABC, Generic[T]):
         self.initial_state = world.get_state()
         self.nodes_expanded = 0
 
+        
+
     @abstractmethod
     def is_goal_state(self, problem_state: T) -> bool:
         """Whether the given state is the goal state"""
@@ -46,6 +48,32 @@ class SearchProblem(ABC, Generic[T]):
         map_str = self.world.world_string
         print(map_str)
 
+    # def __hash__(self, problem_state: T) -> int:
+    #     """Hash the state of the world."""
+    #     print("hash()")
+    #     print("problem_state", problem_state)
+    #     print("problem_state.agents_positions", problem_state.agents_positions)
+    #     print("problem_state.gems_collected", problem_state.gems_collected)
+    #     return hash(problem_state)
+    #     # return hash((self.agent_positions, self.gems_collected))
+    #     # return hash((tuple(self.agent_positions), tuple(self.gems_collected)))
+
+
+    # def __eq__(self, problem_state: T, __value: object) -> bool:
+    #     """Compare the state of the world."""
+    #     print("eq()")
+    #     print("problem_state", problem_state)
+    #     print("problem_state.agents_positions", problem_state.agents_positions)
+    #     print("problem_state.gems_collected", problem_state.gems_collected)
+    #     if not isinstance(__value, WorldState):
+    #         return False
+    #     return self.agent_positions == __value.agent_positions and \
+    #            self.gems_collected == __value.gems_collected
+
+    # def serialize_state(self, world_state: WorldState) -> tuple:
+    #     return (tuple(world_state.agents_positions), tuple(world_state.gems_collected))
+
+
 
 class SimpleSearchProblem(SearchProblem[WorldState]):
 
@@ -59,7 +87,10 @@ class SimpleSearchProblem(SearchProblem[WorldState]):
         agent_positions = set(state.agents_positions)  
         # Check if the number of agents on exits is equal to the total number of agents
         # and if each agent is on a different exit
-        return len(agent_positions) == len(state.agents_positions)
+        result = len(agent_positions) == len(state.agents_positions)
+        print("result", result)
+        # return len(agent_positions) == len(state.agents_positions)
+        return result
     
     def each_agent_on_different_exit_pos(self, state: WorldState) -> bool:
         """Whether each agent is on a different exit position."""
@@ -158,25 +189,31 @@ class SimpleSearchProblem(SearchProblem[WorldState]):
 
         # valid_joint_actions = self.get_valid_joint_actions(state)
         # print("valid_joint_actions", valid_joint_actions)
-        
+        # Create a copy of the world state to avoid modifying the original state
+        # new_state = self.world.copy()
+        world_copy = copy.deepcopy(self.world)
+        world_copy.set_state(state)
         # For each possible joint actions set (i.e. cartesian product of the agents' actions)
-        for joint_actions in product(*self.world.available_actions()):
+        for joint_actions in product(*world_copy.available_actions()):
         # for joint_actions in product(*valid_joint_actions):
+            world_copy_copy = copy.deepcopy(world_copy)
             print("joint_actions", joint_actions)
-            # Create a copy of the world state to avoid modifying the original state
-            # new_state = self.world.copy()
-            new_world = copy.deepcopy(self.world)
-            print("new_world", new_world)
+            
+            print("world_copy_copy", world_copy_copy)
+            print("world_copy_copy.agents_positions", world_copy_copy.agents_positions)
+
             # Apply the joint_actions to the new world 
-            self.world.step(list(joint_actions))
-            new_state = self.world.get_state()
+            world_copy_copy.step(list(joint_actions))
+            new_state = world_copy_copy.get_state()
 
             if self.is_valid_state(new_state):
+                print("new_state", new_state)
 
                 # Compute the cost of the new state
                 cost = self.heuristic(new_state)
                 # Yield the new state, the joint_actions taken, and the cost
                 yield new_state, joint_actions, cost
+
 
     def manhattan_distance(self, pos1: Position, pos2: Position) -> float:
         """The Manhattan distance between two positions"""
