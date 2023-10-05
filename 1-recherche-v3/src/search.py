@@ -3,7 +3,7 @@ from typing import Optional
 from lle import Action, World, WorldState
 
 from problem import SearchProblem, SimpleSearchProblem
-
+from priority_queue import PriorityQueue
 import sys
 import auto_indent
 
@@ -46,39 +46,62 @@ def print_items(items, transform=None) -> None:
         print(item)
     print("")
 
-def dfs(problem: SearchProblem) -> Optional[Solution]:
-    """Depth-First Search"""
+def is_empty(data_structure) -> bool:
+    """Returns True if data_structure is empty, False otherwise"""
+    if isinstance(data_structure, list):
+        return len(data_structure) == 0
+    elif isinstance(data_structure, set):
+        return len(data_structure) == 0
+    elif isinstance(data_structure, PriorityQueue):
+        return data_structure.is_empty()
+
+def tree_search(problem: SearchProblem, mode: str) -> Optional[Solution]:
+    """Tree search algorithm.
+    Args:
+        problem: the problem to solve.
+        mode: the search mode to use:
+            - "dfs": Depth-First Search
+            - "bfs": Breadth-First Search
+            - "astar": A* Search
+
+    Returns:
+        A solution to the problem, or None if no solution exists.
+    """
     # set problem's initial state
     initial_state = problem.initial_state
     # check if initial state is goal state
     current_state_is_goal_state = problem.is_goal_state(initial_state)
 
-    # apply dfs
-    stack = [(problem.initial_state, [])]  # Stack to keep track of states
+    
+    if mode == "astar":
+        data_structure = PriorityQueue()  # Using your PriorityQueue class here
+        data_structure.push((initial_state, []), 0)  # Initial state with priority 0
+    else:
+        data_structure = [(problem.initial_state, [])]  #  to keep track of states
     visited = set()  # Set to keep track of visited states
 
-    while stack:
+    while not is_empty(data_structure):
         # print terminal line spacer empty line
         print("")
         # print terminal line separator
         print("--------------------------------------------------")
+        # print_items(data_structure)
 
-        #print stack
-        # print_items(stack)
+        # Pop the top state from the data_structure
+        if mode == "bfs":
+            current_state, actions = data_structure.pop(0)
+        else:
+            current_state, actions = data_structure.pop()
 
-        # Pop the top state from the stack
-        current_state, actions = stack.pop()
         print("current_state: ", current_state)
         # print("actions: ", actions)
         current_state_hashable = serialize(current_state)
         # print_items(visited)
 
-        # Skip this state if it has already been visited
-        # if hash(current_state) in visited:
-
         # compare hash of current_state to hash of visited states in terminal
         if was(current_state, visited):
-            print("current_state was visited")
+            # state has already been visited
+            # Skip it
             continue
         visited.add(current_state_hashable)
 
@@ -86,13 +109,12 @@ def dfs(problem: SearchProblem) -> Optional[Solution]:
         if problem.is_goal_state(current_state):
             print("Solution found!")
             print("actions: ", actions)
-
             return Solution(actions)
 
-        # Add successors to stack
+        # Add successors to data_structure
         successors = problem.get_successors(current_state)
         print("successors: ")
-        for successor, action, heuristic in successors:  # assuming get_successors returns (state, action) tuples
+        for successor, action, cost in successors:  # assuming get_successors returns (state, action) tuples
             print(successor)
             # Skip this successor if it has already been visited
             if was(successor, visited):
@@ -103,31 +125,28 @@ def dfs(problem: SearchProblem) -> Optional[Solution]:
             # print("action: ", action)
             new_actions = actions + [action]
             # print("new_actions: ", new_actions)
-            stack.append((successor, new_actions))
-            # print_items(stack)
+
+            if mode == "astar":
+                heuristic = problem.heuristic(successor)
+                total_cost = cost + heuristic
+                data_structure.push((successor, new_actions), total_cost)
+            else:
+                data_structure.append((successor, new_actions))
+            # print_items(queue)
     # No solution found
     return None
-        
 
-
+def dfs(problem: SearchProblem) -> Optional[Solution]:
+    """Depth-First Search"""
+    return tree_search(problem, "dfs")
 
 def bfs(problem: SearchProblem) -> Optional[Solution]:
-    ...
-
+    """Breadth-First Search"""
+    return tree_search(problem, "bfs")
 
 def astar(problem: SearchProblem) -> Optional[Solution]:
-    print("astar")
-    print("problem: ", problem)
-    print("problem.world: ", problem.world)
-
-    print("problem.world.get_state(): ", problem.world.get_state())
-
-    # apply astar
-
-
-
-#main
-
+    """A* Search"""
+    return tree_search(problem, "astar")
 
 if __name__ == "__main__":
     # world = World.from_file("cartes/1_agent/vide")

@@ -48,33 +48,6 @@ class SearchProblem(ABC, Generic[T]):
         map_str = self.world.world_string
         print(map_str)
 
-    # def __hash__(self, problem_state: T) -> int:
-    #     """Hash the state of the world."""
-    #     print("hash()")
-    #     print("problem_state", problem_state)
-    #     print("problem_state.agents_positions", problem_state.agents_positions)
-    #     print("problem_state.gems_collected", problem_state.gems_collected)
-    #     return hash(problem_state)
-    #     # return hash((self.agent_positions, self.gems_collected))
-    #     # return hash((tuple(self.agent_positions), tuple(self.gems_collected)))
-
-
-    # def __eq__(self, problem_state: T, __value: object) -> bool:
-    #     """Compare the state of the world."""
-    #     print("eq()")
-    #     print("problem_state", problem_state)
-    #     print("problem_state.agents_positions", problem_state.agents_positions)
-    #     print("problem_state.gems_collected", problem_state.gems_collected)
-    #     if not isinstance(__value, WorldState):
-    #         return False
-    #     return self.agent_positions == __value.agent_positions and \
-    #            self.gems_collected == __value.gems_collected
-
-    # def serialize_state(self, world_state: WorldState) -> tuple:
-    #     return (tuple(world_state.agents_positions), tuple(world_state.gems_collected))
-
-
-
 class SimpleSearchProblem(SearchProblem[WorldState]):
 
     def each_agent_on_different_pos(self, state: WorldState) -> bool:
@@ -270,13 +243,15 @@ class CornerProblemState:
 
 
 class CornerSearchProblem(SearchProblem[CornerProblemState]):
+    """Modélisez le problème qui consiste à passer par les quatre coins du World 
+    puis d’atteindre une sortie."""
     def __init__(self, world: World):
         super().__init__(world)
         self.corners = [(0, 0), (0, world.width - 1), (world.height - 1, 0), (world.height - 1, world.width - 1)]
         self.initial_state = ...
 
     def is_goal_state(self, state: CornerProblemState) -> bool:
-        raise NotImplementedError()
+        return all(corner in state for corner in self.corners) & SimpleSearchProblem.is_goal_state(self, state)
 
     def heuristic(self, problem_state: CornerProblemState) -> float:
         raise NotImplementedError()
@@ -291,12 +266,14 @@ class GemProblemState:
 
 
 class GemSearchProblem(SearchProblem[GemProblemState]):
+    """Modéliez le problème qui consiste à collecter toutes les gemmes de l’environnement 
+    puis à rejoindre les cases de sortie"""
     def __init__(self, world: World):
         super().__init__(world)
         self.initial_state = ...
 
     def is_goal_state(self, state: GemProblemState) -> bool:
-        raise NotImplementedError()
+        return state.gems_collected == self.world.n_gems & SimpleSearchProblem.is_goal_state(self, state)
 
     def heuristic(self, state: GemProblemState) -> float:
         """The number of uncollected gems"""

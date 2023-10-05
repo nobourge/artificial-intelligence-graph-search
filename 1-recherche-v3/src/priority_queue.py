@@ -1,6 +1,6 @@
 import heapq
 from typing import Generic, TypeVar
-from typing_extensions import deprecated
+# from typing_extensions import deprecated
 
 T = TypeVar("T")
 
@@ -28,9 +28,9 @@ class PriorityQueue(Generic[T]):
         (_, _, item) = heapq.heappop(self.heap)
         return item
 
-    @deprecated
-    def isEmpty(self):
-        return len(self.heap) == 0
+    # @deprecated
+    # def isEmpty(self):
+    #     return len(self.heap) == 0
 
     def is_empty(self):
         return len(self.heap) == 0
