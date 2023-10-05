@@ -181,7 +181,7 @@ class SimpleSearchProblem(SearchProblem[WorldState]):
                 yield joint_actions
 
     def get_successors(self, state: WorldState) -> Iterable[Tuple[WorldState, Tuple[Action, ...], float]]:
-        # - N'oubliez pas de jeter un oeil aux méthodes de a classe World (set_state, done, step, available_actions, ...)
+        # - N'oubliez pas de jeter un oeil aux méthodes de la classe World (set_state, done, step, available_actions, ...)
         # - Vous aurez aussi peut-être besoin de `from itertools import product`
         """Yield all possible states that can be reached from the given world state."""
         print("get_successors()")
@@ -194,21 +194,31 @@ class SimpleSearchProblem(SearchProblem[WorldState]):
         world_copy = copy.deepcopy(self.world)
         world_copy.set_state(state)
         # For each possible joint actions set (i.e. cartesian product of the agents' actions)
-        for joint_actions in product(*world_copy.available_actions()):
+        available_actions = world_copy.available_actions()
+        print("available_actions", available_actions)
+        for joint_actions in product(*available_actions):
         # for joint_actions in product(*valid_joint_actions):
             world_copy_copy = copy.deepcopy(world_copy)
             print("joint_actions", joint_actions)
-            
-            print("world_copy_copy", world_copy_copy)
+            # print("world_copy_copy", world_copy_copy)
             print("world_copy_copy.agents_positions", world_copy_copy.agents_positions)
 
             # Apply the joint_actions to the new world 
-            world_copy_copy.step(list(joint_actions))
+            print("list(joint_actions)", list(joint_actions))
+            print("apply joint_actions to the new world")
+            # try world_copy_copy.step(list(joint_actions))
+            # if ValueError: World is done, cannot step anymore
+            # because world_copy_copy.done() is True,
+            # continue to the next joint_actions
+            try:
+                world_copy_copy.step(list(joint_actions))
+            except ValueError:
+                # print("ValueError: World is done, cannot step anymore")
+                continue
             new_state = world_copy_copy.get_state()
-
+            print("new_state", new_state)
             if self.is_valid_state(new_state):
-                print("new_state", new_state)
-
+                # print("new_state is valid")
                 # Compute the cost of the new state
                 cost = self.heuristic(new_state)
                 # Yield the new state, the joint_actions taken, and the cost

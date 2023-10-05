@@ -19,54 +19,29 @@ class Solution:
 
     ...
 
-class HashableAction:
-    def __init__(self, action):
-        self.action = action
 
-    def __hash__(self):
-        # return hash((self.action.some_attribute, self.action.some_other_attribute))
-        return hash((self.action))
-
-    def __eq__(self, other):
-        if not isinstance(other, HashableAction):
-            return False
-        # return self.action.some_attribute == other.action.some_attribute and \
-            #    self.action.some_other_attribute == other.action.some_other_attribute
-        return self.action == other.action
-
-# visited = {}
-# # To add an action:
-# visited[str(action)] = True
-# # To check for an action:
-# if str(action) in visited:
-#     pass
-
-def serialize_state(world_state: WorldState) -> tuple:
+def serialize(world_state: WorldState) -> tuple:
     return (tuple(world_state.agents_positions), tuple(world_state.gems_collected))
 
 def was(world_state: WorldState, visited: set) -> bool:
-    return serialize_state(world_state) in visited
-
-# def print_items(items: T) -> None:
-#     """Prints items in terminal
-#     Args:
-#         items: items to print
-#     T is a generic type variable
-#     possible types for T:
-#     set, list, tuple, dict, etc."""
-#     print("items: ")
-#     for item in items:
-#         print(item)
+    return serialize(world_state) in visited
 
 # function to print visited set or stack items in terminal
-def print_items(items) -> None:
+def print_items(items, transform=None) -> None:
     """Prints items in terminal
     Args:
         items: items to print
     T is a generic type variable
     possible types for T:
     set, list, tuple, dict, etc."""
-    print("items: ")
+    # if items is a set
+    if isinstance(items, set):
+        print("set: ")
+        print("visited: ")
+    # if items is a stack
+    elif isinstance(items, list):
+        print("stack: ")
+    # if transform == "hash":
     for item in items:
         print(item)
     print("")
@@ -83,35 +58,20 @@ def dfs(problem: SearchProblem) -> Optional[Solution]:
     visited = set()  # Set to keep track of visited states
 
     while stack:
-
         # print terminal line spacer empty line
         print("")
-
         # print terminal line separator
         print("--------------------------------------------------")
 
         #print stack
-        print_items(stack)
+        # print_items(stack)
 
         # Pop the top state from the stack
         current_state, actions = stack.pop()
         print("current_state: ", current_state)
-        print("actions: ", actions)
-
-        # current_state_hashable = problem.serialize_state(current_state)
-        current_state_hashable = serialize_state(current_state)
-        print("current_state_hashable: ", current_state_hashable)
-        print("current_state_hashable hash: ")
-        print(hash(current_state_hashable))
-
-        # print the set of visited states in their hashed form
-        print("visited_state hashes: ")
-
-        for visited_state in visited:
-            # print("visited_state: ", visited_state)
-            print(hash(visited_state))
-        # print the set of visited states
-        print_items(visited)
+        # print("actions: ", actions)
+        current_state_hashable = serialize(current_state)
+        # print_items(visited)
 
         # Skip this state if it has already been visited
         # if hash(current_state) in visited:
@@ -136,16 +96,15 @@ def dfs(problem: SearchProblem) -> Optional[Solution]:
             print(successor)
             # Skip this successor if it has already been visited
             if was(successor, visited):
-                print("successor was visited")
+                # print("successor was visited")
                 continue
 
-            print("actions: ", actions)
-            print("action: ", action)
+            # print("actions: ", actions)
+            # print("action: ", action)
             new_actions = actions + [action]
-            print("new_actions: ", new_actions)
+            # print("new_actions: ", new_actions)
             stack.append((successor, new_actions))
-            print_items(stack)
-
+            # print_items(stack)
     # No solution found
     return None
         
@@ -171,7 +130,9 @@ def astar(problem: SearchProblem) -> Optional[Solution]:
 
 
 if __name__ == "__main__":
-    world = World.from_file("cartes/1_agent/vide")
+    # world = World.from_file("cartes/1_agent/vide")
+    world = World.from_file("level3")
+
     problem = SimpleSearchProblem(world)
     solution = dfs(problem)
     print("solution: ", solution)
