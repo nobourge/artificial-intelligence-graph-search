@@ -49,3 +49,45 @@ class PriorityQueue(Generic[T]):
                 break
         else:
             self.push(item, priority)
+
+class PriorityQueueOptimized(Generic[T]):
+    #todo: use this class instead of PriorityQueue
+    """heapify to rebuild the heap, which is an 
+    O(n) operation optimized using a dictionary to keep track of the heap indices for each item, allowing to 
+    update the heap in 
+    O(logn) time."""
+    def __init__(self):
+        self.heap = []
+        self.entry_finder: Dict[T, int] = {}  # Added to optimize the update method
+        self.count = 0
+
+    def push(self, item: T, priority: float):
+        entry = (priority, self.count, item)
+        self.entry_finder[item] = len(self.heap)  # Keep track of the index
+        heapq.heappush(self.heap, entry)
+        self.count += 1
+
+    def pop(self) -> T:
+        while self.heap:
+            _, _, item = heapq.heappop(self.heap)
+            if item in self.entry_finder:
+                del self.entry_finder[item]
+                return item
+        raise KeyError('pop from an empty priority queue')
+
+    def is_empty(self):
+        return len(self.heap) == 0
+
+    def update(self, item: T, priority: float):
+        if item in self.entry_finder:
+            index = self.entry_finder[item]
+            _, _, existing_item = self.heap[index]
+            if existing_item is not item:
+                return
+            self.heap[index] = (priority, self.count, item)
+            heapq._siftup(self.heap, index)
+            heapq._siftdown(self.heap, 0, index)
+            self.count += 1
+        else:
+            self.push(item, priority)
+
