@@ -7,6 +7,7 @@ from .utils import check_world_done
 
 def test_gems_collected():
     world = World.from_file("cartes/gems")
+    # world = World.from_file("cartes/2_agents/zigzag_gems")
     problem = GemSearchProblem(world)
     solution = astar(problem)
     check_world_done(problem, solution)

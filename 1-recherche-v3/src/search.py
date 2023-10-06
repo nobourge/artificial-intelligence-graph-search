@@ -2,8 +2,8 @@ from dataclasses import dataclass
 from typing import Optional
 from lle import Action, World, WorldState
 
-from problem import SearchProblem, SimpleSearchProblem
-from priority_queue import PriorityQueue
+from problem import GemSearchProblem, SearchProblem, SimpleSearchProblem
+from priority_queue import PriorityQueue, PriorityQueueOptimized
 import sys
 import auto_indent
 
@@ -52,7 +52,7 @@ def is_empty(data_structure) -> bool:
         return len(data_structure) == 0
     elif isinstance(data_structure, set):
         return len(data_structure) == 0
-    elif isinstance(data_structure, PriorityQueue):
+    elif isinstance(data_structure, PriorityQueueOptimized) or isinstance(data_structure, PriorityQueue):
         return data_structure.is_empty()
 
 def tree_search(problem: SearchProblem, mode: str) -> Optional[Solution]:
@@ -74,7 +74,8 @@ def tree_search(problem: SearchProblem, mode: str) -> Optional[Solution]:
 
     
     if mode == "astar":
-        data_structure = PriorityQueue()  # Using your PriorityQueue class here
+        # data_structure = PriorityQueue() 
+        data_structure = PriorityQueueOptimized()  
         data_structure.push((initial_state, []), 0)  # Initial state with priority 0
     else:
         data_structure = [(problem.initial_state, [])]  #  to keep track of states
@@ -150,11 +151,22 @@ def astar(problem: SearchProblem) -> Optional[Solution]:
 
 if __name__ == "__main__":
     # world = World.from_file("cartes/1_agent/vide")
-    world = World.from_file("level3")
+    # world = World.from_file("level3")
 
-    problem = SimpleSearchProblem(world)
-    solution = dfs(problem)
+    # problem = SimpleSearchProblem(world)
+    # solution = dfs(problem)
+    # print("solution: ", solution)
+
+    # world = World.from_file("cartes/gems_simplest")
+    world = World.from_file("cartes/2_agents/zigzag_gems")
+    # world = World.from_file("cartes/gems")
+    problem = GemSearchProblem(world)
+    solution = astar(problem)
     print("solution: ", solution)
+    # check_world_done(problem, solution)
+    # if world.n_gems != world.gems_collected:
+    #     raise AssertionError("Your is_goal_state method is likely erroneous beacuse some gems have not been collected")
+
 
 
     

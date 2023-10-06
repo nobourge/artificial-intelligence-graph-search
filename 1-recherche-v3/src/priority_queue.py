@@ -1,5 +1,6 @@
 import heapq
-from typing import Generic, TypeVar
+import json
+from typing import Dict, Generic, TypeVar
 # from typing_extensions import deprecated
 
 T = TypeVar("T")
@@ -53,25 +54,40 @@ class PriorityQueue(Generic[T]):
 class PriorityQueueOptimized(Generic[T]):
     #todo: use this class instead of PriorityQueue
     """heapify to rebuild the heap, which is an 
-    O(n) operation optimized using a dictionary to keep track of the heap indices for each item, allowing to 
+    O(n) operation optimized using a dictionary 
+    to keep track of the heap indices for each item, allowing to 
     update the heap in 
     O(logn) time."""
     def __init__(self):
         self.heap = []
-        self.entry_finder: Dict[T, int] = {}  # Added to optimize the update method
+        # self.entry_finder: Dict[T, int] = {}  
+        self.entry_finder: Dict[str, int] = {}  # String keys for unhashable types
         self.count = 0
 
+    def _stringify(self, item: T) -> str:
+        # return json.dumps(item)
+        return str(id(item))
+    
+    def serialize(self, world_state: T) -> tuple:
+        return (tuple(world_state.agents_positions), tuple(world_state.gems_collected))
+
     def push(self, item: T, priority: float):
+        # serialized_item = self.serialize(item)
+        # entry = (priority, self.count, serialized_item)
+        # self.entry_finder[serialized_item] = len(self.heap)  # Keep track of the index
         entry = (priority, self.count, item)
-        self.entry_finder[item] = len(self.heap)  # Keep track of the index
+        key = self._stringify(item)
+        self.entry_finder[key] = len(self.heap)
         heapq.heappush(self.heap, entry)
         self.count += 1
 
     def pop(self) -> T:
         while self.heap:
             _, _, item = heapq.heappop(self.heap)
-            if item in self.entry_finder:
-                del self.entry_finder[item]
+            key = self._stringify(item)
+            # key = self.serialize(item)
+            if key in self.entry_finder:
+                del self.entry_finder[key]
                 return item
         raise KeyError('pop from an empty priority queue')
 
@@ -79,9 +95,13 @@ class PriorityQueueOptimized(Generic[T]):
         return len(self.heap) == 0
 
     def update(self, item: T, priority: float):
-        if item in self.entry_finder:
-            index = self.entry_finder[item]
+        key = self._stringify(item)
+        # key = self.serialize(item)
+
+        if key in self.entry_finder:
+            index = self.entry_finder[key]
             _, _, existing_item = self.heap[index]
+            # if existing_item is not key:
             if existing_item is not item:
                 return
             self.heap[index] = (priority, self.count, item)
