@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import Optional
 from lle import Action, World, WorldState
 
-from problem import GemSearchProblem, SearchProblem, SimpleSearchProblem
+from problem import CornerSearchProblem, GemSearchProblem, SearchProblem, SimpleSearchProblem
 from priority_queue import PriorityQueue, PriorityQueueOptimized
 import sys
 import auto_indent
@@ -27,24 +27,22 @@ def was(world_state: WorldState, visited: set) -> bool:
     return serialize(world_state) in visited
 
 # function to print visited set or stack items in terminal
-def print_items(items, transform=None) -> None:
-    """Prints items in terminal
-    Args:
-        items: items to print
-    T is a generic type variable
-    possible types for T:
-    set, list, tuple, dict, etc."""
-    # if items is a set
-    if isinstance(items, set):
-        print("set: ")
-        print("visited: ")
-    # if items is a stack
-    elif isinstance(items, list):
-        print("stack: ")
-    # if transform == "hash":
-    for item in items:
-        print(item)
-    print("")
+# def print_items(title, items) -> None:
+#     """Prints items in terminal
+#     Args:
+#         items: items to print
+#     T is a generic type variable
+#     possible types for T:
+#     set, list, tuple, dict, etc."""
+#     try:
+#         items = list(items)
+#         print(title)
+#         for item in items:
+#             print(item)
+#         print("")
+#     except:
+#         pass
+    
 
 def is_empty(data_structure) -> bool:
     """Returns True if data_structure is empty, False otherwise"""
@@ -55,6 +53,25 @@ def is_empty(data_structure) -> bool:
     elif isinstance(data_structure, PriorityQueueOptimized) or isinstance(data_structure, PriorityQueue):
         return data_structure.is_empty()
 
+def check_goal_state(problem: SearchProblem
+                     , current_state: WorldState
+                     , actions: list[tuple[Action]]
+                     , corners_reached: list[tuple[int, int]]
+                     ) -> bool:
+    # Check if the current state is the goal state
+    if isinstance(problem, CornerSearchProblem):
+        current_state_is_goal_state = problem.is_goal_state(current_state)
+        #todo corners_reached
+    else:
+        current_state_is_goal_state = problem.is_goal_state(current_state)
+        
+    if current_state_is_goal_state:
+        print("Solution found!")
+        # print("actions: ", actions)
+            #   ,"\n"
+        print( "n_steps: ", len(actions))
+        return Solution(actions)
+    
 def tree_search(problem: SearchProblem, mode: str) -> Optional[Solution]:
     """Tree search algorithm.
     Args:
@@ -69,6 +86,10 @@ def tree_search(problem: SearchProblem, mode: str) -> Optional[Solution]:
     """
     # set problem's initial state
     initial_state = problem.initial_state
+
+    if isinstance(problem, CornerSearchProblem):
+        corners_to_exits_manhattan_distances = CornerSearchProblem.corners_to_exits_manhattan_distances()
+
     # check if initial state is goal state
     current_state_is_goal_state = problem.is_goal_state(initial_state)
 
@@ -106,15 +127,12 @@ def tree_search(problem: SearchProblem, mode: str) -> Optional[Solution]:
             continue
         visited.add(current_state_hashable)
 
-        # Check if the current state is the goal state
-        if problem.is_goal_state(current_state):
-            print("Solution found!")
-            print("actions: ", actions)
-            return Solution(actions)
+        check_goal_state(problem, current_state, actions, corners_reached=[])
 
         # Add successors to data_structure
         successors = problem.get_successors(current_state)
-        print("successors: ")
+        print("successors: ", successors)
+        # print_items("successors:", successors)
         for successor, action, cost in successors:  # assuming get_successors returns (state, action) tuples
             print(successor)
             # Skip this successor if it has already been visited
@@ -150,19 +168,28 @@ def astar(problem: SearchProblem) -> Optional[Solution]:
     return tree_search(problem, "astar")
 
 if __name__ == "__main__":
-    # world = World.from_file("cartes/1_agent/vide")
-    # world = World.from_file("level3")
 
-    # problem = SimpleSearchProblem(world)
-    # solution = dfs(problem)
-    # print("solution: ", solution)
+    world = World.from_file("cartes/1_agent/simplest")
+    # world = World.from_file("cartes/1_agent/impossible_simplest")
+    # world = World.from_file("cartes/1_agent/zigzag")
+    # world = World.from_file("cartes/2_agents/zigzag")
+    # world = World.from_file("cartes/2_agents/zigzag_simpler")
+
+    # world = World.from_file("level3")
+    world.reset()
+
+    problem = SimpleSearchProblem(world)
+    solution = dfs(problem)
+    # solution = astar(problem)
+    print("solution: ", solution)
 
     # world = World.from_file("cartes/gems_simplest")
-    world = World.from_file("cartes/2_agents/zigzag_gems")
+    # world = World.from_file("cartes/2_agents/zigzag")
+    # world = World.from_file("cartes/2_agents/zigzag_gems")
     # world = World.from_file("cartes/gems")
-    problem = GemSearchProblem(world)
-    solution = astar(problem)
-    print("solution: ", solution)
+    # problem = GemSearchProblem(world)
+    # solution = astar(problem)
+    # print("solution: ", solution)
     # check_world_done(problem, solution)
     # if world.n_gems != world.gems_collected:
     #     raise AssertionError("Your is_goal_state method is likely erroneous beacuse some gems have not been collected")

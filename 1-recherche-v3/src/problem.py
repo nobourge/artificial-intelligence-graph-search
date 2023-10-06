@@ -10,6 +10,18 @@ from lle import Position, World, Action, WorldState
 # T = TypeVar("T")
 T = TypeVar('T', bound=WorldState)  # Declare the generic type variable with a default bound
 
+# function to print visited set or stack items in terminal
+def print_items(title, items, transform=None) -> None:
+    """Prints items in terminal
+    Args:
+        items: items to print
+    T is a generic type variable
+    possible types for T:
+    set, list, tuple, dict, etc."""
+    print(title)
+    for item in items:
+        print(item)
+    print("")
 
 def min_distance_pairing(list_1
                              , list_2):
@@ -35,7 +47,16 @@ def min_distance_pairing(list_1
         
         return paired_points, distances, min_total_distance
 
-
+def min_distance_road(positions: list[Position]) -> float:
+    """The minimum distance between two positions in a list of positions"""
+    min_distance = np.inf
+    for i, pos1 in enumerate(positions):
+        for j, pos2 in enumerate(positions):
+            if i != j:
+                distance = ((pos1[0] - pos2[0]) ** 2 + (pos1[1] - pos2[1]) ** 2) ** 0.5
+                if distance < min_distance:
+                    min_distance = distance
+    return min_distance
 class SearchProblem(ABC, Generic[T]):
     """
     A Search Problem is a problem that can be solved by a search algorithm.
@@ -76,27 +97,25 @@ class SearchProblem(ABC, Generic[T]):
 # class SimpleSearchProblem(SearchProblem[T] = WorldState, Generic[T] = WorldState):  # Use Generic[T] to make the class generic
 class SimpleSearchProblem(SearchProblem[T], Generic[T]):  # Use Generic[T] to make the class generic
 
-    def each_agent_on_different_pos(self, state: WorldState) -> bool:
+    def no_duplicate_in(self, agents_positions: list[Position]) -> bool:
         """Whether each agent is on a different position."""
-        print("each_on_different_pos()")
-        print("state", state)
-        print("state.agents_positions", state.agents_positions)
+        # print("each_on_different_pos()")
 
         # Create a set of the agents' positions
-        agent_positions = set(state.agents_positions)  
+        agents_positions_set = set(agents_positions)  
         # Check if the number of agents on exits is equal to the total number of agents
         # and if each agent is on a different exit
-        result = len(agent_positions) == len(state.agents_positions)
-        print("result", result)
-        # return len(agent_positions) == len(state.agents_positions)
+        result = len(agents_positions) == len(agents_positions_set)
+        # print("result", result)
+        # print("agents")
         return result
     
-    def each_agent_on_different_exit_pos(self, state: WorldState) -> bool:
+    def agents_each_on_different_exit_pos(self, state: WorldState) -> bool:
         """Whether each agent is on a different exit position."""
-        print("each_agent_on_different_exit_pos()")
-        print("state", state)
-        print("state.agents_positions", state.agents_positions)
-        print("self.world.exit_pos", self.world.exit_pos)
+        # print("each_agent_on_different_exit_pos()")
+        # print("state", state)
+        # print("state.agents_positions", state.agents_positions)
+        # print("self.world.exit_pos", self.world.exit_pos)
 
         agent_positions = set(state.agents_positions)  
         exit_positions = set(self.world.exit_pos)  
@@ -117,63 +136,62 @@ class SimpleSearchProblem(SearchProblem[T], Generic[T]):  # Use Generic[T] to ma
         """
         # is_done means the game is over, i.e. agents can no longer perform joint_actions. 
         #   This happens when an agent is dead or all agents are on fini tiles.
-        # if world is done & agents are alive, then it is the goal state
-        # is_done = self.world.done()
-        # if is_done and self.world.agents_alive:
-        #     return True
-        # else:
-        #     return False
-
-        # return self.world.done() and self.world.agents_alive
+        
 
         # true if all agents are on exit tiles
-        return self.each_agent_on_different_exit_pos(state)
+        return self.agents_each_on_different_exit_pos(state)
+    
+    def agent_position_after_action(self, agent_pos: Position, action: Action) -> Position:
+        """The position of an agent after applying the given action."""
+        # print("agent_position_after_action()")
+        # print("agent_pos", agent_pos)
+        # print("action", action)
+        agent_pos_after_action = None
+        # Apply the action to the agent's position
+        if action == Action.NORTH:
+            agent_pos_after_action = (agent_pos[0] - 1, agent_pos[1])
+        elif action == Action.SOUTH:
+            agent_pos_after_action = (agent_pos[0] + 1, agent_pos[1])
+        elif action == Action.WEST:
+            agent_pos_after_action = (agent_pos[0], agent_pos[1] - 1)
+        elif action == Action.EAST:
+            agent_pos_after_action = (agent_pos[0], agent_pos[1] + 1)
+        elif action == Action.STAY:
+            agent_pos_after_action = (agent_pos[0], agent_pos[1])
+        else:
+            raise ValueError("Invalid action")
+        return agent_pos_after_action
 
-    def is_valid_joint_action(self, state: WorldState, joint_action: Tuple[Action, ...]) -> bool:
-        """Whether the given joint action is valid.
+    def are_valid_joint_actions(self, state: WorldState, joint_actions: Tuple[Action, ...]) -> bool:
+        """Whether the given joint actions are valid.
         an action is valid if it is available for an agent 
         and if it does not lead the agent to be on the same position as another agent"""
-        print("is_valid_joint_action()")
-        print("state", state)
-        print("joint_action", joint_action)
-        print("state.agents_positions", state.agents_positions)
-        #todo: check if the joint action is valid
-
+        # print("are_valid_joint_actions()")
+        # print("state", state)
+        # print("joint_actions", joint_actions)
+        # print("state.agents_positions", state.agents_positions)
         # # calculate agent positions after applying the joint action
-        # agent_positions_after_joint_action = []
-        # for i, agent_pos in enumerate(state.agents_positions):
+        agents_positions_after_joint_actions = []
+        for i, agent_pos in enumerate(state.agents_positions):
+            agent_pos_after_action = self.agent_position_after_action(agent_pos, joint_actions[i])
+            agents_positions_after_joint_actions.append(agent_pos_after_action)
+        print("agents_positions_after_joint_actions", agents_positions_after_joint_actions)
 
-        # # if 
-        return False
-    
-    def is_valid_state(self, state: WorldState) -> bool:
-        """Whether the given state is valid.
-        a state is valid if each agent is on a different position"""
-        print("is_valid_state()")
-        print("state", state)
-        print("state.agents_positions", state.agents_positions)
-
-        # Create a set of the agents' positions
-        agent_positions_set = set(state.agents_positions)  
-        # Check if the length of the set is equal to the total number of agents
-        return len(agent_positions_set) == len(state.agents_positions)
+        return self.no_duplicate_in(agents_positions_after_joint_actions)
 
     
-    def get_valid_joint_actions(self, state: WorldState) -> Iterable[Tuple[Action, ...]]:
+    def get_valid_joint_actions(self
+                                , state: WorldState
+                                , available_actions: Tuple[Tuple[Action, ...], ...]) -> Iterable[Tuple[Action, ...]]:
         """Yield all possible joint actions that can be taken from the given state.
         Hint: you can use `self.world.available_actions()` to get the available actions for each agent.
         """
-        print("available_actions", self.world.available_actions())
-        # For each possible joint actions set (i.e. cartesian product of the agents' actions)
-        for joint_actions in product(*self.world.available_actions()):
-            print("joint_actions", joint_actions)
-            # Create a copy of the world state to avoid modifying the original state
-            World_copy = copy.deepcopy(self.world)
-            # Apply the joint_actions to the new world 
-            World_copy.step(list(joint_actions))
-            new_state = World_copy.get_state()
-            # Check if the new state is valid
-            if self.is_valid_state(new_state):
+        # print("available_actions", available_actions)
+        # cartesian product of the agents' actions
+        for joint_actions in product(*available_actions):
+            # print("joint_actions", joint_actions)
+           
+            if self.are_valid_joint_actions(state, joint_actions):
                 # If so, yield the joint_actions
                 yield joint_actions
 
@@ -182,45 +200,39 @@ class SimpleSearchProblem(SearchProblem[T], Generic[T]):  # Use Generic[T] to ma
         # - N'oubliez pas de jeter un oeil aux méthodes de la classe World (set_state, done, step, available_actions, ...)
         # - Vous aurez aussi peut-être besoin de `from itertools import product`
         """Yield all possible states that can be reached from the given world state."""
-        print("get_successors()")
+        # print("get_successors()")
         self.nodes_expanded += 1
-
-        # valid_joint_actions = self.get_valid_joint_actions(state)
-        # print("valid_joint_actions", valid_joint_actions)
-        # Create a copy of the world state to avoid modifying the original state
-        # new_state = self.world.copy()
-        world_copy = copy.deepcopy(self.world)
-        world_copy.set_state(state)
+        real_state = self.world.get_state()
+        # simulation = copy.deepcopy(self.world)
+        self.world.set_state(state)
         # For each possible joint actions set (i.e. cartesian product of the agents' actions)
-        available_actions = world_copy.available_actions()
+        available_actions = self.world.available_actions()
         print("available_actions", available_actions)
-        for joint_actions in product(*available_actions):
-        # for joint_actions in product(*valid_joint_actions):
-            world_copy_copy = copy.deepcopy(world_copy)
+        valid_joint_actions = self.get_valid_joint_actions(state, available_actions)
+        # print_items("valid_joint_actions", valid_joint_actions)
+        for joint_actions in valid_joint_actions:
+            # simulation_copy = copy.deepcopy(simulation)
+            self.world.set_state(state)
             print("joint_actions", joint_actions)
-            # print("world_copy_copy", world_copy_copy)
-            print("world_copy_copy.agents_positions", world_copy_copy.agents_positions)
-
             # Apply the joint_actions to the new world 
-            print("list(joint_actions)", list(joint_actions))
-            print("apply joint_actions to the new world")
-            # try world_copy_copy.step(list(joint_actions))
-            # if ValueError: World is done, cannot step anymore
-            # because world_copy_copy.done() is True,
-            # continue to the next joint_actions
             try:
-                world_copy_copy.step(list(joint_actions))
+                print("world.step()")
+                self.world.step(list(joint_actions))
             except ValueError:
-                # print("ValueError: World is done, cannot step anymore")
+                print("ValueError: World is done, cannot step anymore")
                 continue
-            new_state = world_copy_copy.get_state()
-            print("new_state", new_state)
-            if self.is_valid_state(new_state):
-                # print("new_state is valid")
-                # Compute the cost of the new state
-                cost = self.heuristic(new_state)
-                # Yield the new state, the joint_actions taken, and the cost
-                yield new_state, joint_actions, cost
+            successor_state = self.world.get_state()
+            print("successor_state", successor_state)
+            # Compute the cost of the new state
+            cost = self.heuristic(successor_state)
+            # Yield the new state, the joint_actions taken, and the cost
+            yield successor_state, joint_actions, cost
+            print("hello")
+        print("bye")
+
+        self.world.set_state(real_state)
+
+        print("self.world.get_state()", self.world.get_state())
 
 
     def manhattan_distance(self, pos1: Position, pos2: Position) -> float:
@@ -235,7 +247,7 @@ class SimpleSearchProblem(SearchProblem[T], Generic[T]):  # Use Generic[T] to ma
         agent_positions = self.world.agents_positions
         print("agent_positions", agent_positions)
         exit_positions = self.world.exit_pos
-        print("exit_positions", exit_positions)
+        # print("exit_positions", exit_positions)
         # for each agent, compute its closest exit, if exit 
         min_distance_pairing_result = min_distance_pairing(agent_positions, exit_positions)
         return min_distance_pairing_result[2]
@@ -255,20 +267,99 @@ class CornerSearchProblem(SearchProblem[CornerProblemState]):
         self.corners = [(0, 0), (0, world.width - 1), (world.height - 1, 0), (world.height - 1, world.width - 1)]
         self.initial_state = world.get_state()
         # self.initial_state = CornerProblemState(world.get_state())
+        self.corners_to_exits_minimum_distance_pairing = min_distance_pairing(self.corners, self.world.exit_pos)    
+        self.agents_to_corners_minimum_distance_pairing = min_distance_pairing(self.world.agents_positions, self.corners)
+    
+    def min_distance_road_between_corners(self) -> float:
+        """The minimum distance road to reach all corners"""
+        min_distance = np.inf
 
-    def is_goal_state(self, state: CornerProblemState) -> bool:
-        return all(corner in state for corner in self.corners) and SimpleSearchProblem.is_goal_state(self, state)
+        return min_distance
 
-    def heuristic(self, problem_state: CornerProblemState) -> float:
-        raise NotImplementedError()
+    
+
+    def corners_to_exits_manhattan_distances(self) -> list[float]:
+        corners_to_exits_manhattan_distances = []
+        exit_positions = self.world.exit_pos
+        min_distance_pairing_result, distances, min_total_distance = min_distance_pairing(self.corners, exit_positions)
+        # for corner in self.corners:
+        #     corner_to_exits_manhattan_distances.
+        print("distances", distances)
+        return distances
+
+    def all_corners_reached(self
+                            , state
+                            , corners_reached: list[Position]) -> bool:
+        """Whether all corners are reached"""
+        # print("all_corners_reached()")
+        # print("state", state)
+
+        return len(corners_reached) == len(self.corners)
+
+    def is_goal_state(self, state: CornerProblemState, corners_reached: list[Position]) -> bool:
+        """Whether the given state is the goal state
+        """
+        # if a new position is reached, check if it is a corner
+        # if it is, add it to the list of corners reached
+        agents_positions = state.agents_positions
+        for agent_pos in agents_positions:
+            if agent_pos not in corners_reached and agent_pos in self.corners:
+                corners_reached.append(agent_pos)
+
+        # if all corners are reached, check if it is the goal state
+
+        return self.all_corners_reached(state, corners_reached) and SimpleSearchProblem.is_goal_state(self, state)
+
+    # def heuristic(self, problem_state: CornerProblemState) -> float:
+    def heuristic(self, state: WorldState) -> float:
+        """minimum distance pairing between agents and corners
+        + minimum distance pairing between corners and exits
+        
+        The distance of each agent to its corner road closest corner and to the closest exit"""
+        # print("heuristic()")
+        # print("state", state)
+        # print("state.agents_positions", state.agents_positions)
+        # print("state.gems_collected", state.gems_collected)
+        # print("self.world.exit_pos", self.world.exit_pos)
+        # print("self.world.n_gems", self.world.n_gems)
+
+        cost = 0.0
+
+        # Create a list of the agents' positions
+        agents_positions = state.agents_positions
+        # print("agents_positions", agents_positions)
+
+        # if len(agents_positions) == 0:
+        #     return cost
+        # elif len(agents_positions) == 1:
+
+
+        # minimum distance pairing between agents and corners
+        agents_to_corners_min_distance_pairing_result = min_distance_pairing(agents_positions, self.corners)
+        # print("agents_to_corners_min_distance_pairing_result", agents_to_corners_min_distance_pairing_result)
+        # add the minimum total distance to the heuristic
+        min_total_distance = agents_to_corners_min_distance_pairing_result[2]
+        corners_cost = min_total_distance
+        cost += corners_cost
+
+        # Create a list of the exit positions
+        exit_positions = self.world.exit_pos
+        # print("exit_positions", exit_positions)
+        # minimum distance pairing between agents and exits
+        corners_to_exits_min_distance_pairing_result = min_distance_pairing(self.corners, exit_positions)
+        # print("corners_to_exits_min_distance_pairing_result", corners_to_exits_min_distance_pairing_result)
+        # add the minimum total distance to the heuristic
+        min_total_distance = corners_to_exits_min_distance_pairing_result[2]
+        exit_cost = min_total_distance
+        cost += exit_cost
+
+        return cost
 
     def get_successors(self, state: CornerProblemState) -> Iterable[Tuple[CornerProblemState, Action, float]]:
         self.nodes_expanded += 1
         # use SimpleSearchProblem.get_successors()
         for successor in SimpleSearchProblem.get_successors(self, state):
             yield successor
-
-
 
 class GemProblemState:
     """The state of the GemSearchProblem"""
@@ -277,37 +368,19 @@ class GemProblemState:
         self.gems_collected = world_state.gems_collected
         self.world_state = world_state
 
-
-
-# class GemSearchProblem(SearchProblem[GemProblemState]):
 class GemSearchProblem(SimpleSearchProblem[WorldState]):
     """Modéliez le problème qui consiste à collecter toutes les gemmes de l’environnement 
     puis à rejoindre les cases de sortie"""
     def __init__(self, world: World):
         super().__init__(world)
-        # self.initial_state = GemProblemState(world.get_state())
         self.initial_state = world.get_state()
 
+    def all_gems_collected(self, state):
+        return sum(state.gems_collected) == self.world.n_gems
 
-    # def is_valid_state(self, state: WorldState) -> bool:
-    #     """Whether the given state is valid.
-    #     a state is valid if each agent is on a different position"""
-    #     print("is_valid_state()")
-    #     print("state", state)
-    #     print("state.agents_positions", state.agents_positions)
+    def is_goal_state(self, state):
+        return self.all_gems_collected(state) and super().is_goal_state(state)
 
-    #     # Create a set of the agents' positions
-    #     agent_positions_set = set(state.agents_positions)  
-    #     # Check if the length of the set is equal to the total number of agents
-    #     return len(agent_positions_set) == len(state.agents_positions)
-
-    # override
-    # def is_goal_state(self, state: GemProblemState) -> bool:
-    def is_goal_state(self, state: WorldState) -> bool:
-        # gems_collected_quantity = state.gems_collected
-        return sum(state.gems_collected) == self.world.n_gems and SimpleSearchProblem.is_goal_state(self, state)
-
-    # def heuristic(self, state: GemProblemState) -> float:
     def heuristic(self, state: WorldState) -> float:
         """The distance of each agent to each uncollected gem and to the closest exit
         when all gems are collected, the distance of each agent to the closest exit"""
@@ -324,14 +397,14 @@ class GemSearchProblem(SimpleSearchProblem[WorldState]):
         agents_positions = state.agents_positions
         print("agents_positions", agents_positions)
 
-        # Create a list of the uncollected gems
-        uncollected_gems_positions = []
-        for i, gem_collected in enumerate(state.gems_collected):
-            if gem_collected == 0:
-                uncollected_gems_positions.append(self.world.gems[i][0])
-        print("uncollected_gems_positions", uncollected_gems_positions)
+        if not self.all_gems_collected(state):
+            # Create a list of the uncollected gems
+            uncollected_gems_positions = []
+            for i, gem_collected in enumerate(state.gems_collected):
+                if gem_collected == 0:
+                    uncollected_gems_positions.append(self.world.gems[i][0])
+            print("uncollected_gems_positions", uncollected_gems_positions)
 
-        if uncollected_gems_positions:
             # minimum distance pairing between agents and uncollected gems
             agents_to_gems_min_distance_pairing_result = min_distance_pairing(agents_positions, uncollected_gems_positions)
             print("agents_to_gems_min_distance_pairing_result", agents_to_gems_min_distance_pairing_result)
@@ -344,7 +417,7 @@ class GemSearchProblem(SimpleSearchProblem[WorldState]):
 
         # Create a list of the exit positions
         exit_positions = self.world.exit_pos
-        print("exit_positions", exit_positions)
+        # print("exit_positions", exit_positions)
         # minimum distance pairing between agents and exits
         agents_to_exits_min_distance_pairing_result = min_distance_pairing(agents_positions, exit_positions)
         print("agents_to_exits_min_distance_pairing_result", agents_to_exits_min_distance_pairing_result)
@@ -355,54 +428,4 @@ class GemSearchProblem(SimpleSearchProblem[WorldState]):
 
         return cost
 
-    # def get_successors(self, state: GemProblemState) -> Iterable[Tuple[GemProblemState, Action, float]]:
-    #     self.nodes_expanded += 1
-    #     # use SimpleSearchProblem.get_successors()
-    #     for successor in SimpleSearchProblem.get_successors(self, state):
-    #     # for successor in SimpleSearchProblem.get_successors(self, state.world_state):
-    #         yield successor
-
-     # def get_successors(self, state: WorldState) -> Iterable[Tuple[WorldState, Tuple[Action, ...], float]]:
-    # def get_successors(self, state: GemProblemState) -> Iterable[Tuple[WorldState, Tuple[Action, ...], float]]:
-    #     # - N'oubliez pas de jeter un oeil aux méthodes de la classe World (set_state, done, step, available_actions, ...)
-    #     # - Vous aurez aussi peut-être besoin de `from itertools import product`
-    #     """Yield all possible states that can be reached from the given world state."""
-    #     print("get_successors()")
-    #     self.nodes_expanded += 1
-
-    #     # valid_joint_actions = self.get_valid_joint_actions(state)
-    #     # print("valid_joint_actions", valid_joint_actions)
-    #     # Create a copy of the world state to avoid modifying the original state
-    #     # new_state = self.world.copy()
-    #     world_copy = copy.deepcopy(self.world)
-    #     world_copy.set_state(state) # TypeError: argument 'state': 'GemProblemState' object cannot be converted to 'WorldState'
-    #     # For each possible joint actions set (i.e. cartesian product of the agents' actions)
-    #     available_actions = world_copy.available_actions()
-    #     print("available_actions", available_actions)
-    #     for joint_actions in product(*available_actions):
-    #     # for joint_actions in product(*valid_joint_actions):
-    #         world_copy_copy = copy.deepcopy(world_copy)
-    #         print("joint_actions", joint_actions)
-    #         # print("world_copy_copy", world_copy_copy)
-    #         print("world_copy_copy.agents_positions", world_copy_copy.agents_positions)
-
-    #         # Apply the joint_actions to the new world 
-    #         print("list(joint_actions)", list(joint_actions))
-    #         print("apply joint_actions to the new world")
-    #         # try world_copy_copy.step(list(joint_actions))
-    #         # if ValueError: World is done, cannot step anymore
-    #         # because world_copy_copy.done() is True,
-    #         # continue to the next joint_actions
-    #         try:
-    #             world_copy_copy.step(list(joint_actions))
-    #         except ValueError:
-    #             # print("ValueError: World is done, cannot step anymore")
-    #             continue
-    #         new_state = world_copy_copy.get_state()
-    #         print("new_state", new_state)
-    #         if self.is_valid_state(new_state):
-    #             # print("new_state is valid")
-    #             # Compute the cost of the new state
-    #             cost = self.heuristic(new_state)
-    #             # Yield the new state, the joint_actions taken, and the cost
-    #             yield new_state, joint_actions, cost
+    
