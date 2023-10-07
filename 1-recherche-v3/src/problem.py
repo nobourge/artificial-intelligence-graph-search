@@ -10,6 +10,8 @@ from lle import Position, World, Action, WorldState
 # T = TypeVar("T")
 T = TypeVar('T', bound=WorldState)  # Declare the generic type variable with a default bound
 
+
+
 def serialize(world_state: WorldState) -> tuple:
     return (tuple(world_state.agents_positions), tuple(world_state.gems_collected))
 
@@ -243,18 +245,21 @@ class SimpleSearchProblem(SearchProblem[T], Generic[T]):  # Use Generic[T] to ma
                 continue
             if was(successor_state, visited):
                 continue
-            # Compute the cost of the new state
-            cost = self.heuristic(successor_state)
+            
             if isinstance(self, CornerSearchProblem):
-                corners_reached = self.update_corners_reached(corners_reached
+                successor_corners_reached = self.update_corners_reached(corners_reached
                                                               , joint_actions
                                                               , successor_state.agents_positions
-
                                                               )
-            # Yield the new state, the joint_actions taken, and the cost
-            yield successor_state, joint_actions, cost
-            print("hello")
-        print("bye")
+                print("successor_corners_reached", successor_corners_reached)
+                # Compute the cost of the new state
+                cost = self.heuristic(successor_state, successor_corners_reached)
+                yield successor_state, joint_actions, cost, successor_corners_reached
+            else:
+                # Compute the cost of the new state
+                cost = self.heuristic(successor_state)
+                # Yield the new state, the joint_actions taken, and the cost
+                yield successor_state, joint_actions, cost
         self.world.set_state(real_state)
         print("self.world.get_state()", self.world.get_state())
 
@@ -363,7 +368,10 @@ class CornerSearchProblem(SearchProblem[CornerProblemState]):
         return self.all_corners_reached(state, corners_reached) and SimpleSearchProblem.is_goal_state(self, state)
 
     # def heuristic(self, problem_state: CornerProblemState) -> float:
-    def heuristic(self, state: WorldState) -> float:
+    def heuristic(self
+                  , state: WorldState
+                  , corners_reached: list[Position]
+                  ) -> float:
         """minimum distance pairing between agents and corners
         + minimum distance pairing between corners and exits
         
@@ -381,29 +389,15 @@ class CornerSearchProblem(SearchProblem[CornerProblemState]):
         agents_positions = state.agents_positions
         # print("agents_positions", agents_positions)
 
-        # if len(agents_positions) == 0:
-        #     return cost
-        # elif len(agents_positions) == 1:
-
+        # Create a list of the corners to reach
+        corners_to_reach = [corner for corner in self.corners if corner not in corners_reached]
+        print("corners_to_reach", corners_to_reach)
 
         # minimum distance pairing between agents and corners
-        agents_to_corners_min_distance_pairing_result = min_distance_pairing(agents_positions, self.corners)
-        # print("agents_to_corners_min_distance_pairing_result", agents_to_corners_min_distance_pairing_result)
-        # add the minimum total distance to the heuristic
-        min_total_distance = agents_to_corners_min_distance_pairing_result[2]
-        corners_cost = min_total_distance
-        cost += corners_cost
 
-        # Create a list of the exit positions
-        exit_positions = self.world.exit_pos
-        # print("exit_positions", exit_positions)
-        # minimum distance pairing between agents and exits
-        corners_to_exits_min_distance_pairing_result = min_distance_pairing(self.corners, exit_positions)
-        # print("corners_to_exits_min_distance_pairing_result", corners_to_exits_min_distance_pairing_result)
-        # add the minimum total distance to the heuristic
-        min_total_distance = corners_to_exits_min_distance_pairing_result[2]
-        exit_cost = min_total_distance
-        cost += exit_cost
+
+
+
 
         return cost
 
