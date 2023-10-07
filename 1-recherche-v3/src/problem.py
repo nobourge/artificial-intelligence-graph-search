@@ -10,6 +10,12 @@ from lle import Position, World, Action, WorldState
 # T = TypeVar("T")
 T = TypeVar('T', bound=WorldState)  # Declare the generic type variable with a default bound
 
+def serialize(world_state: WorldState) -> tuple:
+    return (tuple(world_state.agents_positions), tuple(world_state.gems_collected))
+
+def was(world_state: WorldState, visited: set) -> bool:
+    return serialize(world_state) in visited
+
 # function to print visited set or stack items in terminal
 def print_items(title, items, transform=None) -> None:
     """Prints items in terminal
@@ -194,9 +200,27 @@ class SimpleSearchProblem(SearchProblem[T], Generic[T]):  # Use Generic[T] to ma
             if self.are_valid_joint_actions(state, joint_actions):
                 # If so, yield the joint_actions
                 yield joint_actions
+    
+    def get_successor_state(self
+                            , state: WorldState
+                            , joint_actions: Tuple[Action, ...]) -> WorldState:
+        """The successor state of the given state after applying the given joint actions."""
+        self.world.set_state(state)
+        print("joint_actions", joint_actions)
+        # Apply the joint_actions to the new world 
+        print("world.step()")
+        self.world.step(list(joint_actions))
+        successor_state = self.world.get_state()
+        print("successor_state", successor_state)
+        return successor_state
 
-    def get_successors(self, state: WorldState) -> Iterable[Tuple[WorldState, Tuple[Action, ...], float]]:
-    # def get_successors(self, state: T) -> Iterable[Tuple[WorldState, Tuple[Action, ...], float]]:
+    def get_successors(self
+                       , state: WorldState
+                       , visited: set = None
+                       , corners_reached: list[Position] = None
+                       ) -> Iterable[Tuple[WorldState, Tuple[Action, ...]
+                                           , float
+                                           , list[Position]]]:
         # - N'oubliez pas de jeter un oeil aux méthodes de la classe World (set_state, done, step, available_actions, ...)
         # - Vous aurez aussi peut-être besoin de `from itertools import product`
         """Yield all possible states that can be reached from the given world state."""
@@ -212,26 +236,20 @@ class SimpleSearchProblem(SearchProblem[T], Generic[T]):  # Use Generic[T] to ma
         # print_items("valid_joint_actions", valid_joint_actions)
         for joint_actions in valid_joint_actions:
             # simulation_copy = copy.deepcopy(simulation)
-            self.world.set_state(state)
-            print("joint_actions", joint_actions)
-            # Apply the joint_actions to the new world 
             try:
-                print("world.step()")
-                self.world.step(list(joint_actions))
+                successor_state = self.get_successor_state(state, joint_actions)
             except ValueError:
                 print("ValueError: World is done, cannot step anymore")
                 continue
-            successor_state = self.world.get_state()
-            print("successor_state", successor_state)
+            if was(successor_state, visited):
+                continue
             # Compute the cost of the new state
             cost = self.heuristic(successor_state)
             # Yield the new state, the joint_actions taken, and the cost
             yield successor_state, joint_actions, cost
             print("hello")
         print("bye")
-
         self.world.set_state(real_state)
-
         print("self.world.get_state()", self.world.get_state())
 
 
@@ -260,11 +278,12 @@ class CornerProblemState:
 
 
 class CornerSearchProblem(SearchProblem[CornerProblemState]):
-    """Modélisez le problème qui consiste à passer par les quatre coins du World 
+    """Problème qui consiste à passer par les quatre coins du World 
     puis d’atteindre une sortie."""
     def __init__(self, world: World):
         super().__init__(world)
         self.corners = [(0, 0), (0, world.width - 1), (world.height - 1, 0), (world.height - 1, world.width - 1)]
+        # self.corners_reached = []
         self.initial_state = world.get_state()
         # self.initial_state = CornerProblemState(world.get_state())
         self.corners_to_exits_minimum_distance_pairing = min_distance_pairing(self.corners, self.world.exit_pos)    
@@ -276,8 +295,6 @@ class CornerSearchProblem(SearchProblem[CornerProblemState]):
 
         return min_distance
 
-    
-
     def corners_to_exits_manhattan_distances(self) -> list[float]:
         corners_to_exits_manhattan_distances = []
         exit_positions = self.world.exit_pos
@@ -286,6 +303,18 @@ class CornerSearchProblem(SearchProblem[CornerProblemState]):
         #     corner_to_exits_manhattan_distances.
         print("distances", distances)
         return distances
+    
+    def update_corners_reached(self
+                               , corners_reached: list[Position]
+                               , agent_position: Position) -> list[Position]:
+        """Update the list of corners reached"""
+        corners_reached.append(agent_position)
+        return corners_reached
+    
+    # def check_corners_reached(self
+    #                             , corners_reached: list[Position]
+    #                             , state: WorldState) -> bool:
+        
 
     def all_corners_reached(self
                             , state
@@ -296,7 +325,9 @@ class CornerSearchProblem(SearchProblem[CornerProblemState]):
 
         return len(corners_reached) == len(self.corners)
 
-    def is_goal_state(self, state: CornerProblemState, corners_reached: list[Position]) -> bool:
+    def is_goal_state(self
+                      , state: WorldState
+                      , corners_reached: list[Position]) -> bool:
         """Whether the given state is the goal state
         """
         # if a new position is reached, check if it is a corner

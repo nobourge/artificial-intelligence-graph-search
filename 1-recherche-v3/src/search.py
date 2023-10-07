@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import Optional
 from lle import Action, World, WorldState
 
-from problem import CornerSearchProblem, GemSearchProblem, SearchProblem, SimpleSearchProblem
+from problem import CornerSearchProblem, GemSearchProblem, SearchProblem, SimpleSearchProblem, serialize
 from priority_queue import PriorityQueue, PriorityQueueOptimized
 import sys
 import auto_indent
@@ -20,11 +20,7 @@ class Solution:
     ...
 
 
-def serialize(world_state: WorldState) -> tuple:
-    return (tuple(world_state.agents_positions), tuple(world_state.gems_collected))
 
-def was(world_state: WorldState, visited: set) -> bool:
-    return serialize(world_state) in visited
 
 # function to print visited set or stack items in terminal
 # def print_items(title, items) -> None:
@@ -56,19 +52,17 @@ def is_empty(data_structure) -> bool:
 def check_goal_state(problem: SearchProblem
                      , current_state: WorldState
                      , actions: list[tuple[Action]]
-                     , corners_reached: list[tuple[int, int]]
+                     , corners_reached = None
                      ) -> bool:
     # Check if the current state is the goal state
     if isinstance(problem, CornerSearchProblem):
-        current_state_is_goal_state = problem.is_goal_state(current_state)
-        #todo corners_reached
+        current_state_is_goal_state = problem.is_goal_state(current_state, corners_reached)
     else:
         current_state_is_goal_state = problem.is_goal_state(current_state)
         
     if current_state_is_goal_state:
         print("Solution found!")
-        # print("actions: ", actions)
-            #   ,"\n"
+        print("actions: ", actions)
         print( "n_steps: ", len(actions))
         return Solution(actions)
     
@@ -86,20 +80,26 @@ def tree_search(problem: SearchProblem, mode: str) -> Optional[Solution]:
     """
     # set problem's initial state
     initial_state = problem.initial_state
-
-    if isinstance(problem, CornerSearchProblem):
-        corners_to_exits_manhattan_distances = CornerSearchProblem.corners_to_exits_manhattan_distances()
-
-    # check if initial state is goal state
-    current_state_is_goal_state = problem.is_goal_state(initial_state)
-
-    
+    actions = []
+    cost = 0
     if mode == "astar":
         # data_structure = PriorityQueue() 
         data_structure = PriorityQueueOptimized()  
-        data_structure.push((initial_state, []), 0)  # Initial state with priority 0
+        if isinstance(problem, CornerSearchProblem):
+            corners_reached = []
+            # heuristic = problem.heuristic(initial_state)
+            data_structure.push((initial_state
+                                 , actions
+                                 , corners_reached)
+                                , cost)
+        else:
+            data_structure.push((initial_state
+                                 , actions
+                                 )
+                                , cost)
     else:
-        data_structure = [(problem.initial_state, [])]  #  to keep track of states
+        data_structure = [(problem.initial_state
+                           , actions)]  #  to keep track of states
     visited = set()  # Set to keep track of visited states
 
     while not is_empty(data_structure):
@@ -115,40 +115,52 @@ def tree_search(problem: SearchProblem, mode: str) -> Optional[Solution]:
         else:
             current_state, actions = data_structure.pop()
 
+        if isinstance(problem, CornerSearchProblem):
+            check_goal_state(problem
+                            , current_state
+                            , actions
+                            , corners_reached)
+        else:
+            check_goal_state(problem
+                            , current_state
+                            , actions
+                            , None)
+
         print("current_state: ", current_state)
         # print("actions: ", actions)
         current_state_hashable = serialize(current_state)
-        # print_items(visited)
-
-        # compare hash of current_state to hash of visited states in terminal
-        if was(current_state, visited):
-            # state has already been visited
-            # Skip it
-            continue
         visited.add(current_state_hashable)
 
-        check_goal_state(problem, current_state, actions, corners_reached=[])
-
         # Add successors to data_structure
-        successors = problem.get_successors(current_state)
+        if isinstance(problem, CornerSearchProblem):
+            successors, corners_reached = problem.get_successors(current_state
+                                                ,visited
+                                                ,corners_reached)
+        else:
+            successors = problem.get_successors(current_state
+                                            ,visited)
         print("successors: ", successors)
         # print_items("successors:", successors)
         for successor, action, cost in successors:  # assuming get_successors returns (state, action) tuples
             print(successor)
-            # Skip this successor if it has already been visited
-            if was(successor, visited):
-                # print("successor was visited")
-                continue
-
             # print("actions: ", actions)
             # print("action: ", action)
             new_actions = actions + [action]
             # print("new_actions: ", new_actions)
-
             if mode == "astar":
-                heuristic = problem.heuristic(successor)
-                total_cost = cost + heuristic
-                data_structure.push((successor, new_actions), total_cost)
+                successor_cost = problem.heuristic(successor)
+                total_cost = cost + successor_cost
+                if isinstance(problem, CornerSearchProblem):
+                    # corners_reached = problem.corners_reached(successor
+                    #                                           , corners_reached)
+                    data_structure.push((successor
+                                         , new_actions
+                                         , corners_reached)
+                                        , total_cost)
+                else:
+                    data_structure.push((successor
+                                         , new_actions)
+                                        , total_cost)
             else:
                 data_structure.append((successor, new_actions))
             # print_items(queue)

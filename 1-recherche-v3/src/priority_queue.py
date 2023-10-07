@@ -26,6 +26,12 @@ class PriorityQueue(Generic[T]):
         self.count += 1
 
     def pop(self) -> T:
+        """pop the item with the minimum priority"""
+        (_, _, item) = heapq.heappop(self.heap)
+        return item
+    
+    def pop_maximum_priority(self) -> T:
+        """pop the item with the maximum priority"""
         (_, _, item) = heapq.heappop(self.heap)
         return item
 
@@ -52,8 +58,9 @@ class PriorityQueue(Generic[T]):
             self.push(item, priority)
 
 class PriorityQueueOptimized(Generic[T]):
-    #todo: use this class instead of PriorityQueue
-    """heapify to rebuild the heap, which is an 
+    """heapq default minheap
+    
+    heapify to rebuild the heap, which is an 
     O(n) operation optimized using a dictionary 
     to keep track of the heap indices for each item, allowing to 
     update the heap in 
