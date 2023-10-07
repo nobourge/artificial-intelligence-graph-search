@@ -245,6 +245,12 @@ class SimpleSearchProblem(SearchProblem[T], Generic[T]):  # Use Generic[T] to ma
                 continue
             # Compute the cost of the new state
             cost = self.heuristic(successor_state)
+            if isinstance(self, CornerSearchProblem):
+                corners_reached = self.update_corners_reached(corners_reached
+                                                              , joint_actions
+                                                              , successor_state.agents_positions
+
+                                                              )
             # Yield the new state, the joint_actions taken, and the cost
             yield successor_state, joint_actions, cost
             print("hello")
@@ -304,12 +310,27 @@ class CornerSearchProblem(SearchProblem[CornerProblemState]):
         print("distances", distances)
         return distances
     
-    def update_corners_reached(self
+    def update_corner_reached(self
                                , corners_reached: list[Position]
                                , agent_position: Position) -> list[Position]:
         """Update the list of corners reached"""
         corners_reached.append(agent_position)
         return corners_reached
+    
+    def update_corners_reached(self
+                                 , corners_reached: list[Position]
+                                    , joint_actions: Tuple[Action, ...]
+                                    , agent_positions: list[Position]) -> list[Position]:
+        """Update the list of corners reached"""
+        for action in joint_actions:
+            if action != Action.STAY:
+                agent_position = agent_positions[joint_actions.index(action)]
+                if agent_position not in corners_reached and agent_position in self.corners:
+                    corners_reached.append(agent_position)
+
+        return corners_reached
+
+
     
     # def check_corners_reached(self
     #                             , corners_reached: list[Position]
@@ -330,12 +351,12 @@ class CornerSearchProblem(SearchProblem[CornerProblemState]):
                       , corners_reached: list[Position]) -> bool:
         """Whether the given state is the goal state
         """
-        # if a new position is reached, check if it is a corner
-        # if it is, add it to the list of corners reached
-        agents_positions = state.agents_positions
-        for agent_pos in agents_positions:
-            if agent_pos not in corners_reached and agent_pos in self.corners:
-                corners_reached.append(agent_pos)
+        # # if a new position is reached, check if it is a corner
+        # # if it is, add it to the list of corners reached
+        # agents_positions = state.agents_positions
+        # for agent_pos in agents_positions:
+        #     if agent_pos not in corners_reached and agent_pos in self.corners:
+        #         corners_reached.append(agent_pos)
 
         # if all corners are reached, check if it is the goal state
 
