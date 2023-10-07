@@ -39,5 +39,7 @@ class AutoIndent(object):
         self.stream.write(stuff)
         # write stuff in file ./src/log.txt
         with open("./src/log.txt", "a") as f:
+            # flush log.txt
+            f.seek(0)
             f.write(stuff)
 

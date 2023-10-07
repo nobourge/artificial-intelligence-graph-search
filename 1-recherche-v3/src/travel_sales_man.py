@@ -23,16 +23,6 @@ def balanced_multi_salesmen_greedy_tsp(remaining_cities: List[Tuple[int, int]]
                 break
             
             current_city = routes[salesman][-1]
-            # finish_city = finish_cities[int(salesman.split('_')[1]) - 1] # 
-
-            # if current_city in finish_cities:
-            #     continue
-
-            # for city in remaining_cities:
-            #     pq.put((distance(current_city, city), city))
-
-            # _, nearest_city = pq.get()
-            # nearest_distance = distance(current_city, nearest_city)
             nearest_city, nearest_distance = min_distance_position(routes[salesman][-1], remaining_cities)
             distances[salesman] += nearest_distance
             routes[salesman].append(nearest_city)

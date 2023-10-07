@@ -17,7 +17,7 @@
 from typing import List, Tuple
 
 
-def distance(coord1, coord2):
+def get_distance(coord1, coord2):
     """Returns the distance between two coordinates"""
     x1, y1 = coord1
     x2, y2 = coord2
@@ -30,7 +30,9 @@ def min_distance_position(position : Tuple[int, int]
     min_distance = float("inf")
     min_position = None
     for pos in positions:
-        distance = distance
+        distance = 0
+        distance = get_distance(position, pos)
+        # print(distance)
         if distance < min_distance:
             min_distance = distance
             min_position = pos
@@ -46,8 +48,10 @@ def print_items(title, items, transform=None) -> None:
     possible types for T:
     set, list, tuple, dict, etc."""
     print(title)
+    i = 0
     for item in items:
-        print(item)
+        i += 1
+        print(i, item)
     print("")
 
 

@@ -35,7 +35,8 @@ def check_goal_state(problem: SearchProblem
                      , objectives_reached = None
                      ) -> bool:
     # Check if the current state is the goal state
-    if isinstance(problem, CornerSearchProblem) or isinstance(problem, GemSearchProblem):
+    # if isinstance(problem, CornerSearchProblem) or isinstance(problem, GemSearchProblem):
+    if isinstance(problem, CornerSearchProblem):
         current_state_is_goal_state = problem.is_goal_state(current_state, objectives_reached)
     else:
         current_state_is_goal_state = problem.is_goal_state(current_state)
@@ -45,6 +46,16 @@ def check_goal_state(problem: SearchProblem
         print("actions: ", actions)
         print( "n_steps: ", len(actions))
         return Solution(actions)
+
+def get_initial_objectives_reached(problem: SearchProblem
+                                        , initial_state: WorldState
+                                        ) -> list[tuple[int, int]]:
+    objectives_reached = []
+    if isinstance(problem, CornerSearchProblem):
+        for corner in problem.corners:
+            if corner in initial_state.agents_positions:
+                objectives_reached.append(corner)
+    return objectives_reached
     
 def tree_search(problem: SearchProblem, mode: str) -> Optional[Solution]:
     """Tree search algorithm.
@@ -62,11 +73,11 @@ def tree_search(problem: SearchProblem, mode: str) -> Optional[Solution]:
     initial_state = problem.initial_state
     actions = []
     cost = 0
+    objectives_reached = get_initial_objectives_reached(problem, initial_state)
     if mode == "astar":
         # data_structure = PriorityQueue() 
         data_structure = PriorityQueueOptimized()  
         if isinstance(problem, CornerSearchProblem) or isinstance(problem, GemSearchProblem):
-            objectives_reached = []
             # heuristic = problem.heuristic(initial_state)
             data_structure.push((initial_state
                                  , actions
@@ -101,8 +112,11 @@ def tree_search(problem: SearchProblem, mode: str) -> Optional[Solution]:
                 current_state, actions = data_structure.pop()
 
         # Check if the current state is in the visited set
-        if was(current_state, visited):
+        if was(current_state
+               , objectives_reached
+               , visited):
             continue
+        print("current_state: ", current_state)
         solution = None
         if isinstance(problem, CornerSearchProblem):
             solution = check_goal_state(problem
@@ -118,32 +132,42 @@ def tree_search(problem: SearchProblem, mode: str) -> Optional[Solution]:
             return solution
 
         print("current_state: ", current_state)
-        # print("actions: ", actions)
-        current_state_hashable = serialize(current_state)
+        print("actions: ", actions)
+        current_state_hashable = serialize(current_state, objectives_reached)
         visited.add(current_state_hashable)
         # print_items("visited: ", visited)
 
         # Add successors to data_structure
         if isinstance(problem, CornerSearchProblem) or isinstance(problem, GemSearchProblem):
-            successors, objectives_reached = problem.get_successors(current_state
+            successors = problem.get_successors(current_state
                                                 ,visited
                                                 ,objectives_reached)
+            # print("successors: ", successors)
+            # print("objectives_reached: ", objectives_reached)
+            # print("other: ", other)
         else:
             successors = problem.get_successors(current_state
                                             ,visited)
         print("")
-        print("successors: ")
+        # print("successors: ")
         # print_items("successors:", successors)
-        for successor, action, cost in successors:  # assuming get_successors returns (state, action) tuples
-            print(successor)
+
+        for successor_tuple in successors:  
+            if isinstance(problem, CornerSearchProblem) or isinstance(problem, GemSearchProblem):
+                successor, action, cost, objectives_reached = successor_tuple
+            else:
+                successor, action, cost = successor_tuple
+                objectives_reached = None
+            # print(successor)
             # print("actions: ", actions)
             # print("action: ", action)
             new_actions = actions + [action]
             # print("new_actions: ", new_actions)
             if mode == "astar":
-                successor_cost = problem.heuristic(successor)
-                total_cost = cost + successor_cost
+                
                 if isinstance(problem, CornerSearchProblem) or isinstance(problem, GemSearchProblem):
+                    successor_cost = problem.heuristic(successor, objectives_reached)
+                    total_cost = cost + successor_cost
                     # corners_reached = problem.corners_reached(successor
                     #                                           , corners_reached)
                     data_structure.push((successor
@@ -151,6 +175,8 @@ def tree_search(problem: SearchProblem, mode: str) -> Optional[Solution]:
                                          , objectives_reached)
                                         , total_cost)
                 else:
+                    successor_cost = problem.heuristic(successor)
+                    total_cost = cost + successor_cost
                     data_structure.push((successor
                                          , new_actions)
                                         , total_cost)
@@ -176,18 +202,19 @@ if __name__ == "__main__":
 
     # world = World.from_file("cartes/1_agent/simplest")
     # world = World.from_file("cartes/1_agent/impossible_simplest")
-    world = World.from_file("cartes/2_agents/impossible")
+    # world = World.from_file("cartes/2_agents/impossible")
     # world = World.from_file("cartes/1_agent/zigzag")
     # world = World.from_file("cartes/2_agents/zigzag")
     # world = World.from_file("cartes/2_agents/zigzag_simpler")
+    # world = World.from_file("cartes/corners_simplest")
 
     # world = World.from_file("level3")
-    world.reset()
+    # world.reset()
 
-    problem = SimpleSearchProblem(world)
+    # problem = SimpleSearchProblem(world)
     # solution = dfs(problem)
-    solution = astar(problem)
-    print("solution: ", solution)
+    # solution = astar(problem)
+    # print("solution: ", solution)
 
     # world = World.from_file("cartes/gems_simplest")
     # world = World.from_file("cartes/2_agents/zigzag")
@@ -203,3 +230,31 @@ if __name__ == "__main__":
 
 
     
+    # world = World(
+    #         """
+    #         S0 . X
+    #         . . ."""
+    #     )
+    # problem = SimpleSearchProblem(world)
+    # successors = list(problem.get_successors(problem.initial_state))
+    # assert len(successors) == 3
+    # world.reset()
+    # available = world.available_actions()[0]
+    # agent_pos = ((0, 0), (0, 1), (1, 0))
+    # for state, action, cost in successors:
+    #     assert action[0] in available
+    #     assert state.agents_positions[0] in agent_pos
+
+
+    world = World.from_file("cartes/corners")
+    # world = World.from_file("cartes/corners5x5")
+    problem = CornerSearchProblem(world)
+    solution = astar(problem)
+    world.reset()
+    corners = set([(0, 0), (0, world.width - 1), (world.height - 1, 0), (world.height - 1, world.width - 1)])
+    for action in solution.actions:
+        world.step(action)
+        agent_pos = world.agents_positions[0]
+        if agent_pos in corners:
+            corners.remove(agent_pos)
+    assert len(corners) == 0, f"The agent did not reach these corners: {corners}"
