@@ -1,26 +1,21 @@
 # Adjusted code based on user input
 import heapq
-from typing import List
+from typing import List, Tuple
 import numpy as np
 from priority_queue import PriorityQueueOptimized
+from utils import min_distance_position
 
 # Adapted Greedy Algorithm with Balanced Total Distances
-def balanced_multi_salesmen_greedy_tsp(cities
+def balanced_multi_salesmen_greedy_tsp(remaining_cities: List[Tuple[int, int]]
                                        , num_salesmen: int
-                                       , start_cities: List[str]
-                                       , finish_cities: List[str]):
-    # Dictionary to store routes and distances for each salesman
+                                       , start_cities: List[Tuple[int, int]]
+                                       , finish_cities: List[Tuple[int, int]]):
+    """Given a list of cities coordinates, returns a list of cities visited by each salesman
+    in the order that minimizes the total distance traveled.
+    """
+    
     routes = {f"Salesman_{i+1}": [start_cities[i]] for i in range(num_salesmen)}
     distances = {f"Salesman_{i+1}": 0.0 for i in range(num_salesmen)}
-    
-    def distance(city1, city2):
-        x1, y1 = cities[city1]
-        x2, y2 = cities[city2]
-        return ((x2 - x1)**2 + (y2 - y1)**2)**0.5
-
-    pq = PriorityQueueOptimized()
-
-    remaining_cities = list(set(cities.keys()) - set(start_cities) - set(finish_cities))
 
     while remaining_cities:
         for salesman in routes.keys():
@@ -28,29 +23,29 @@ def balanced_multi_salesmen_greedy_tsp(cities
                 break
             
             current_city = routes[salesman][-1]
-            finish_city = finish_cities[int(salesman.split('_')[1]) - 1]
+            # finish_city = finish_cities[int(salesman.split('_')[1]) - 1] # 
 
-            if current_city == finish_city:
-                continue
+            # if current_city in finish_cities:
+            #     continue
 
-            for city in remaining_cities:
-                pq.push(city, distance(current_city, city))
+            # for city in remaining_cities:
+            #     pq.put((distance(current_city, city), city))
 
-            nearest_city = pq.pop()
-            nearest_distance = distance(current_city, nearest_city)
+            # _, nearest_city = pq.get()
+            # nearest_distance = distance(current_city, nearest_city)
+            nearest_city, nearest_distance = min_distance_position(routes[salesman][-1], remaining_cities)
             distances[salesman] += nearest_distance
             routes[salesman].append(nearest_city)
             remaining_cities.remove(nearest_city)
 
-    # Add distance to finish cities and append them to the routes
     for salesman in routes.keys():
         current_city = routes[salesman][-1]
-        finish_city = finish_cities[int(salesman.split('_')[1]) - 1]
-        final_distance = distance(current_city, finish_city)
+        finish_city, final_distance = min_distance_position(current_city, finish_cities)
         distances[salesman] += final_distance
         routes[salesman].append(finish_city)
-
-    return routes, distances
+        
+    total_distance = sum(distances.values())
+    return routes, distances, total_distance
 
 # # Run the adapted algorithm
 # balanced_routes, balanced_distances = balanced_multi_salesmen_greedy_tsp(sample_cities, num_salesmen, start_cities, finish_cities)

@@ -71,6 +71,10 @@ class PriorityQueueOptimized(Generic[T]):
         self.entry_finder: Dict[str, int] = {}  # String keys for unhashable types
         self.count = 0
 
+    # PriorityQueueOptimized iterable form
+    def __iter__(self):
+        return iter(self.heap)
+    
     def _stringify(self, item: T) -> str:
         # return json.dumps(item)
         return str(id(item))

@@ -6,30 +6,33 @@ import numpy as np
 from typing import Tuple, Iterable, Generic, TypeVar
 from lle import Position, World, Action, WorldState
 
+from travel_sales_man import balanced_multi_salesmen_greedy_tsp
+from utils import print_items
+
 
 # T = TypeVar("T")
 T = TypeVar('T', bound=WorldState)  # Declare the generic type variable with a default bound
 
 
 
-def serialize(world_state: WorldState) -> tuple:
-    return (tuple(world_state.agents_positions), tuple(world_state.gems_collected))
-
-def was(world_state: WorldState, visited: set) -> bool:
-    return serialize(world_state) in visited
-
-# function to print visited set or stack items in terminal
-def print_items(title, items, transform=None) -> None:
-    """Prints items in terminal
+def serialize(world_state: WorldState
+              ,objectives_reached: list[Position] = None
+              ) -> tuple:
+    """Serialize the given world state.
     Args:
-        items: items to print
-    T is a generic type variable
-    possible types for T:
-    set, list, tuple, dict, etc."""
-    print(title)
-    for item in items:
-        print(item)
-    print("")
+        world_state: the world state to serialize.
+    Returns:
+        A tuple that represents the given world state.
+    """
+    if objectives_reached:
+        return (tuple(world_state.agents_positions), tuple(world_state.gems_collected), tuple(objectives_reached))
+    else:
+        return (tuple(world_state.agents_positions), tuple(world_state.gems_collected))
+
+def was(state: WorldState, visited: set) -> bool:
+    # print("was()")
+    # print("state", state)
+    return serialize(state) in visited
 
 def min_distance_pairing(list_1
                              , list_2):
@@ -77,6 +80,8 @@ class SearchProblem(ABC, Generic[T]):
         self.world = world
         world.reset()
         self.initial_state = world.get_state()
+        self.objectives = []
+
         self.nodes_expanded = 0
 
     @abstractmethod
@@ -96,10 +101,6 @@ class SearchProblem(ABC, Generic[T]):
     def heuristic(self, problem_state: T) -> float:
         return 0.0
     
-    def print_state(self, problem_state: T):
-        """Print the state of the world."""
-        map_str = self.world.world_string
-        print(map_str)
 
 # class SimpleSearchProblem(SearchProblem[WorldState]):
 # class SimpleSearchProblem(SearchProblem[T] = WorldState, Generic[T] = WorldState):  # Use Generic[T] to make the class generic
@@ -183,7 +184,7 @@ class SimpleSearchProblem(SearchProblem[T], Generic[T]):  # Use Generic[T] to ma
         for i, agent_pos in enumerate(state.agents_positions):
             agent_pos_after_action = self.agent_position_after_action(agent_pos, joint_actions[i])
             agents_positions_after_joint_actions.append(agent_pos_after_action)
-        print("agents_positions_after_joint_actions", agents_positions_after_joint_actions)
+        # print("agents_positions_after_joint_actions", agents_positions_after_joint_actions)
 
         return self.no_duplicate_in(agents_positions_after_joint_actions)
 
@@ -208,18 +209,19 @@ class SimpleSearchProblem(SearchProblem[T], Generic[T]):  # Use Generic[T] to ma
                             , joint_actions: Tuple[Action, ...]) -> WorldState:
         """The successor state of the given state after applying the given joint actions."""
         self.world.set_state(state)
-        print("joint_actions", joint_actions)
+        # print("joint_actions", joint_actions)
         # Apply the joint_actions to the new world 
-        print("world.step()")
+        # print("world.step()")
         self.world.step(list(joint_actions))
         successor_state = self.world.get_state()
-        print("successor_state", successor_state)
+        # print("successor_state", successor_state)
         return successor_state
 
     def get_successors(self
                        , state: WorldState
                        , visited: set = None
-                       , corners_reached: list[Position] = None
+                    #    , corners_reached: list[Position] = None
+                       , objectives_reached: list[Position] = None
                        ) -> Iterable[Tuple[WorldState, Tuple[Action, ...]
                                            , float
                                            , list[Position]]]:
@@ -227,41 +229,58 @@ class SimpleSearchProblem(SearchProblem[T], Generic[T]):  # Use Generic[T] to ma
         # - Vous aurez aussi peut-être besoin de `from itertools import product`
         """Yield all possible states that can be reached from the given world state."""
         # print("get_successors()")
+        # print("state", state)
         self.nodes_expanded += 1
         real_state = self.world.get_state()
         # simulation = copy.deepcopy(self.world)
         self.world.set_state(state)
         # For each possible joint actions set (i.e. cartesian product of the agents' actions)
         available_actions = self.world.available_actions()
-        print("available_actions", available_actions)
+        # print("available_actions", available_actions)
         valid_joint_actions = self.get_valid_joint_actions(state, available_actions)
         # print_items("valid_joint_actions", valid_joint_actions)
+        i = 0
         for joint_actions in valid_joint_actions:
+            i += 1
+            print("successor", i)
             # simulation_copy = copy.deepcopy(simulation)
             try:
                 successor_state = self.get_successor_state(state, joint_actions)
             except ValueError:
                 print("ValueError: World is done, cannot step anymore")
                 continue
+            # print_items("visited", visited)
             if was(successor_state, visited):
+                # print(successor_state, "was visited")
                 continue
             
             if isinstance(self, CornerSearchProblem):
-                successor_corners_reached = self.update_corners_reached(corners_reached
+                successor_objectives_reached = self.update_corners_reached(objectives_reached
                                                               , joint_actions
                                                               , successor_state.agents_positions
                                                               )
-                print("successor_corners_reached", successor_corners_reached)
+                # print("successor_corners_reached", successor_objectives_reached)
                 # Compute the cost of the new state
-                cost = self.heuristic(successor_state, successor_corners_reached)
-                yield successor_state, joint_actions, cost, successor_corners_reached
-            else:
+                cost = self.heuristic(successor_state, successor_objectives_reached)
+                # print("yielding", successor_state, joint_actions, cost, successor_objectives_reached)
+                yield successor_state, joint_actions, cost, successor_objectives_reached
+            elif isinstance(self, GemSearchProblem):
+                successor_objectives_reached = self.update_gems_collected(objectives_reached
+                                                              , joint_actions
+                                                              , successor_state.agents_positions
+                                                              )
+                # Compute the cost of the new state
+                cost = self.heuristic(successor_state, successor_objectives_reached)
+                # print
+                yield successor_state, joint_actions, cost, successor_objectives_reached
+            elif not isinstance(self, CornerSearchProblem) and not isinstance(self, GemSearchProblem):
                 # Compute the cost of the new state
                 cost = self.heuristic(successor_state)
                 # Yield the new state, the joint_actions taken, and the cost
+                # print("yielding", successor_state, joint_actions, cost)
                 yield successor_state, joint_actions, cost
         self.world.set_state(real_state)
-        print("self.world.get_state()", self.world.get_state())
+        # print("self.world.get_state()", self.world.get_state())
 
 
     def manhattan_distance(self, pos1: Position, pos2: Position) -> float:
@@ -274,7 +293,7 @@ class SimpleSearchProblem(SearchProblem[T], Generic[T]):  # Use Generic[T] to ma
     def heuristic(self, state: WorldState) -> float:
         """Manhattan distance for each agent to the closest exit"""
         agent_positions = self.world.agents_positions
-        print("agent_positions", agent_positions)
+        # print("agent_positions", agent_positions)
         exit_positions = self.world.exit_pos
         # print("exit_positions", exit_positions)
         # for each agent, compute its closest exit, if exit 
@@ -297,7 +316,7 @@ class CornerSearchProblem(SearchProblem[CornerProblemState]):
         # self.corners_reached = []
         self.initial_state = world.get_state()
         # self.initial_state = CornerProblemState(world.get_state())
-        self.corners_to_exits_minimum_distance_pairing = min_distance_pairing(self.corners, self.world.exit_pos)    
+        self.corners_to_exits_minimum_distance_pairing = min_distance_pairing(self.corners, self.world.exit_pos)  
         self.agents_to_corners_minimum_distance_pairing = min_distance_pairing(self.world.agents_positions, self.corners)
     
     def min_distance_road_between_corners(self) -> float:
@@ -312,7 +331,7 @@ class CornerSearchProblem(SearchProblem[CornerProblemState]):
         min_distance_pairing_result, distances, min_total_distance = min_distance_pairing(self.corners, exit_positions)
         # for corner in self.corners:
         #     corner_to_exits_manhattan_distances.
-        print("distances", distances)
+        # print("distances", distances)
         return distances
     
     def update_corner_reached(self
@@ -381,9 +400,6 @@ class CornerSearchProblem(SearchProblem[CornerProblemState]):
         # print("state.agents_positions", state.agents_positions)
         # print("state.gems_collected", state.gems_collected)
         # print("self.world.exit_pos", self.world.exit_pos)
-        # print("self.world.n_gems", self.world.n_gems)
-
-        cost = 0.0
 
         # Create a list of the agents' positions
         agents_positions = state.agents_positions
@@ -394,11 +410,12 @@ class CornerSearchProblem(SearchProblem[CornerProblemState]):
         print("corners_to_reach", corners_to_reach)
 
         # minimum distance pairing between agents and corners
-
-
-
-
-
+        
+        cost = balanced_multi_salesmen_greedy_tsp(corners_to_reach
+                                                  , len(agents_positions)
+                                                  , agents_positions
+                                                  , self.world.exit_pos
+                                                  )
         return cost
 
     def get_successors(self, state: CornerProblemState) -> Iterable[Tuple[CornerProblemState, Action, float]]:
@@ -421,56 +438,81 @@ class GemSearchProblem(SimpleSearchProblem[WorldState]):
         super().__init__(world)
         self.initial_state = world.get_state()
 
+    def update_gems_collected(self
+                                , gems_collected: list[Position]
+                                , joint_actions: Tuple[Action, ...]
+                                , agent_positions: list[Position]) -> list[Position]:
+        """Update the list of gems collected"""
+        for action in joint_actions:
+            if action != Action.STAY:
+                agent_position = agent_positions[joint_actions.index(action)]
+                if agent_position not in gems_collected and agent_position in [pos for pos, gem in self.world.gems]:
+                    gems_collected.append(agent_position)
+
+        return gems_collected
+
     def all_gems_collected(self, state):
         return sum(state.gems_collected) == self.world.n_gems
 
     def is_goal_state(self, state):
         return self.all_gems_collected(state) and super().is_goal_state(state)
 
-    def heuristic(self, state: WorldState) -> float:
+    def heuristic(self
+                  , state: WorldState
+                  , gems_collected
+                  ) -> float:
         """The distance of each agent to each uncollected gem and to the closest exit
         when all gems are collected, the distance of each agent to the closest exit"""
-        print("heuristic()")
-        print("state", state)
-        print("state.agents_positions", state.agents_positions)
-        print("state.gems_collected", state.gems_collected)
-        print("self.world.exit_pos", self.world.exit_pos)
-        print("self.world.n_gems", self.world.n_gems)
+        # print("heuristic()")
+        # print("state", state)
+        # print("state.agents_positions", state.agents_positions)
+        # print("state.gems_collected", state.gems_collected)
+        # print("self.world.exit_pos", self.world.exit_pos)
+        # print("self.world.n_gems", self.world.n_gems)
 
-        cost = 0.0
+        # cost = 0.0
 
-        # Create a list of the agents' positions
-        agents_positions = state.agents_positions
-        print("agents_positions", agents_positions)
+        # # Create a list of the agents' positions
+        # agents_positions = state.agents_positions
+        # print("agents_positions", agents_positions)
 
-        if not self.all_gems_collected(state):
-            # Create a list of the uncollected gems
-            uncollected_gems_positions = []
-            for i, gem_collected in enumerate(state.gems_collected):
-                if gem_collected == 0:
-                    uncollected_gems_positions.append(self.world.gems[i][0])
-            print("uncollected_gems_positions", uncollected_gems_positions)
+        # if not self.all_gems_collected(state):
+        #     # Create a list of the uncollected gems
+        #     uncollected_gems_positions = []
+        #     for i, gem_collected in enumerate(state.gems_collected):
+        #         if gem_collected == 0:
+        #             uncollected_gems_positions.append(self.world.gems[i][0])
+        #     print("uncollected_gems_positions", uncollected_gems_positions)
 
-            # minimum distance pairing between agents and uncollected gems
-            agents_to_gems_min_distance_pairing_result = min_distance_pairing(agents_positions, uncollected_gems_positions)
-            print("agents_to_gems_min_distance_pairing_result", agents_to_gems_min_distance_pairing_result)
-            # add the minimum total distance to the heuristic
-            min_total_distance = agents_to_gems_min_distance_pairing_result[2]
-            # exit < gem collection
-            uncollected_gems_cost = min_total_distance*2
-            cost += uncollected_gems_cost
+        #     # minimum distance pairing between agents and uncollected gems
+        #     agents_to_gems_min_distance_pairing_result = min_distance_pairing(agents_positions, uncollected_gems_positions)
+        #     print("agents_to_gems_min_distance_pairing_result", agents_to_gems_min_distance_pairing_result)
+        #     # add the minimum total distance to the heuristic
+        #     min_total_distance = agents_to_gems_min_distance_pairing_result[2]
+        #     # exit < gem collection
+        #     uncollected_gems_cost = min_total_distance*2
+        #     cost += uncollected_gems_cost
     
 
-        # Create a list of the exit positions
-        exit_positions = self.world.exit_pos
-        # print("exit_positions", exit_positions)
-        # minimum distance pairing between agents and exits
-        agents_to_exits_min_distance_pairing_result = min_distance_pairing(agents_positions, exit_positions)
-        print("agents_to_exits_min_distance_pairing_result", agents_to_exits_min_distance_pairing_result)
-        # add the minimum total distance to the heuristic
-        min_total_distance = agents_to_exits_min_distance_pairing_result[2]
-        exit_cost = min_total_distance
-        cost += exit_cost
+        # # Create a list of the exit positions
+        # exit_positions = self.world.exit_pos
+        # # print("exit_positions", exit_positions)
+        # # minimum distance pairing between agents and exits
+        # agents_to_exits_min_distance_pairing_result = min_distance_pairing(agents_positions, exit_positions)
+        # print("agents_to_exits_min_distance_pairing_result", agents_to_exits_min_distance_pairing_result)
+        # # add the minimum total distance to the heuristic
+        # min_total_distance = agents_to_exits_min_distance_pairing_result[2]
+        # exit_cost = min_total_distance
+        # cost += exit_cost
+
+        gems_to_collect = [gem for gem in self.world.gems if not gem in gems_collected]
+        # print("gems_to_collect", gems_to_collect)
+
+        cost = balanced_multi_salesmen_greedy_tsp(gems_to_collect
+                                                  , len(state.agents_positions)
+                                                  , state.agents_positions
+                                                  , self.world.exit_pos
+                                                  )
 
         return cost
 

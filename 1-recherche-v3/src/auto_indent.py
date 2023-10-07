@@ -37,3 +37,7 @@ class AutoIndent(object):
 
         stuff = "\n".join([indent(line) for line in stuff.split("\n")])
         self.stream.write(stuff)
+        # write stuff in file ./src/log.txt
+        with open("./src/log.txt", "a") as f:
+            f.write(stuff)
+
