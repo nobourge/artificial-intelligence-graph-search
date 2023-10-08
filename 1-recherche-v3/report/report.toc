@@ -1,0 +1,11 @@
+\contentsline {section}{\numberline {1}Introduction}{2}{section.1}%
+\contentsline {section}{\numberline {2}Results}{2}{section.2}%
+\contentsline {subsection}{\numberline {2.1}Paths Sizes and Nodes Expansions Comparison}{2}{subsection.2.1}%
+\contentsline {subsection}{\numberline {2.2}Discussion}{2}{subsection.2.2}%
+\contentsline {section}{\numberline {3}Heuristics Development}{2}{section.3}%
+\contentsline {subsection}{\numberline {3.1}Common Foundation: Multi-Agent TSP}{3}{subsection.3.1}%
+\contentsline {subsection}{\numberline {3.2}Optimization}{3}{subsection.3.2}%
+\contentsline {section}{\numberline {4}ChatGPT Usage}{3}{section.4}%
+\contentsline {subsection}{\numberline {4.1}Data Dump}{3}{subsection.4.1}%
+\contentsline {subsubsection}{\numberline {4.1.1}Memory}{3}{subsubsection.4.1.1}%
+\contentsline {subsection}{\numberline {4.2}Filtering Output}{4}{subsection.4.2}%
