@@ -4,9 +4,9 @@ from lle import Action, World, WorldState
 
 from problem import CornerSearchProblem, GemSearchProblem, SearchProblem, SimpleSearchProblem, serialize, was
 from priority_queue import PriorityQueue
-import sys
-import auto_indent
-from utils import print_items
+# import sys
+# import auto_indent
+# from utils import print_items
 
 # sys.stdout = auto_indent.AutoIndent(sys.stdout)
 
@@ -26,7 +26,7 @@ def is_empty(data_structure) -> bool:
         return len(data_structure) == 0
     elif isinstance(data_structure, set):
         return len(data_structure) == 0
-    elif isinstance(data_structure, PriorityQueueOptimized) or isinstance(data_structure, PriorityQueue):
+    elif isinstance(data_structure, PriorityQueue):
         return data_structure.is_empty()
 
 def check_goal_state(problem: SearchProblem
@@ -41,8 +41,10 @@ def check_goal_state(problem: SearchProblem
         current_state_is_goal_state = problem.is_goal_state(current_state)
         
     if current_state_is_goal_state:
-        print("Solution found!")
-        print("actions: ", actions)
+        # print("Solution found!")
+        print("nodes expanded: ", problem.nodes_expanded)
+        # print("actions: ", actions)
+        problem.path_size = len(actions)
         print( "n_steps: ", len(actions))
         return Solution(actions)
 
@@ -89,14 +91,6 @@ def tree_search(problem: SearchProblem, mode: str) -> Optional[Solution]:
     visited = set()  # Set to keep track of visited states
 
     while not is_empty(data_structure):
-        # print terminal line spacer empty line
-        print("")
-        # print terminal line separator
-        print("--------------------------------------------------")
-        # print_items(data_structure)
-        # print_items("data_structure: ", data_structure)
-        # print("data_structure: ", data_structure)
-
         # Pop the top state from the data_structure
         if mode == "bfs":
             current_state, actions = data_structure.pop(0)
@@ -111,7 +105,6 @@ def tree_search(problem: SearchProblem, mode: str) -> Optional[Solution]:
                , objectives_reached
                , visited):
             continue
-        print("current_state: ", current_state)
         solution = None
         if isinstance(problem, CornerSearchProblem):
             solution = check_goal_state(problem
@@ -141,18 +134,12 @@ def tree_search(problem: SearchProblem, mode: str) -> Optional[Solution]:
             else:
                 successor, successor_actions, cost = successor_tuple
                 objectives_reached = None
-            # print(successor)
-            # print("actions: ", actions)
-            # print("action: ", action)
             new_actions = actions + [successor_actions]
-            # print("new_actions: ", new_actions)
             if mode == "astar":
                 
                 if isinstance(problem, CornerSearchProblem) or isinstance(problem, GemSearchProblem):
                     successor_cost = problem.heuristic(successor, objectives_reached)
                     total_cost = cost + successor_cost
-                    # corners_reached = problem.corners_reached(successor
-                    #                                           , corners_reached)
                     data_structure.push((successor
                                          , new_actions
                                          , objectives_reached)
@@ -165,8 +152,6 @@ def tree_search(problem: SearchProblem, mode: str) -> Optional[Solution]:
                                         , total_cost)
             else:
                 data_structure.append((successor, new_actions))
-            # print_items(queue)
-    # No solution found
     return None
 
 def dfs(problem: SearchProblem) -> Optional[Solution]:

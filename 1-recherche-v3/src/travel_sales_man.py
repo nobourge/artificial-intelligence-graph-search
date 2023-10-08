@@ -37,9 +37,6 @@ def balanced_multi_salesmen_greedy_tsp(remaining_cities: List[Tuple[int, int]]
     total_distance = sum(distances.values())
     return routes, distances, total_distance
 
-# # Run the adapted algorithm
-# balanced_routes, balanced_distances = balanced_multi_salesmen_greedy_tsp(sample_cities, num_salesmen, start_cities, finish_cities)
-# balanced_routes, balanced_distances
 
 # Greedy Algorithm with Min Heap (Priority Queue)
 def greedy_tsp_heap(cities_to_visit
