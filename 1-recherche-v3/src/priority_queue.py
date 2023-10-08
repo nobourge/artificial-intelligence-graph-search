@@ -57,7 +57,7 @@ class PriorityQueue(Generic[T]):
         else:
             self.push(item, priority)
 
-class PriorityQueueOptimized(Generic[T]):
+class PriorityQueueOptimized(Generic[T]): #todo: 2x slower than PriorityQueue at least
     """heapq default minheap
     
     heapify to rebuild the heap, which is an 

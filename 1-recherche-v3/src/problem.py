@@ -104,38 +104,22 @@ class SearchProblem(ABC, Generic[T]):
 
     def heuristic(self, problem_state: T) -> float:
         return 0.0
-    
-
-# class SimpleSearchProblem(SearchProblem[WorldState]):
-# class SimpleSearchProblem(SearchProblem[T] = WorldState, Generic[T] = WorldState):  # Use Generic[T] to make the class generic
 class SimpleSearchProblem(SearchProblem[T], Generic[T]):  # Use Generic[T] to make the class generic
 
     def no_duplicate_in(self, agents_positions: list[Position]) -> bool:
         """Whether each agent is on a different position."""
-        # print("each_on_different_pos()")
-
-        # Create a set of the agents' positions
         agents_positions_set = set(agents_positions)  
         # Check if the number of agents on exits is equal to the total number of agents
         # and if each agent is on a different exit
         result = len(agents_positions) == len(agents_positions_set)
-        # print("result", result)
-        # print("agents")
         return result
     
     def agents_each_on_different_exit_pos(self, state: WorldState) -> bool:
         """Whether each agent is on a different exit position."""
-        # print("each_agent_on_different_exit_pos()")
-        # print("state", state)
-        # print("state.agents_positions", state.agents_positions)
-        # print("self.world.exit_pos", self.world.exit_pos)
-
         agent_positions = set(state.agents_positions)  
         exit_positions = set(self.world.exit_pos)  
-        
         # Intersect the sets to find agents that are on exit positions
         agents_on_exits = agent_positions.intersection(exit_positions)
-        
         # Check if the number of agents on exits is equal to the total number of agents
         # and if each agent is on a different exit
         return len(agents_on_exits) == len(agent_positions) # and len(agents_on_exits) == len(exit_positions)
@@ -143,15 +127,9 @@ class SimpleSearchProblem(SearchProblem[T], Generic[T]):  # Use Generic[T] to ma
     def is_goal_state(self, state: WorldState) -> bool:
         """Whether the given 
         SimpleStateProblem state is the 
-        SimpleSearchProblem goal state
-
-        Hint: you can use `self.world.done()` to check if the world is done.
+        SimpleSearchProblem goal state.
+        True if all agents are on exit tiles
         """
-        # is_done means the game is over, i.e. agents can no longer perform joint_actions. 
-        #   This happens when an agent is dead or all agents are on fini tiles.
-        
-
-        # true if all agents are on exit tiles
         return self.agents_each_on_different_exit_pos(state)
     
     def agent_position_after_action(self, agent_pos: Position, action: Action) -> Position:
@@ -188,8 +166,6 @@ class SimpleSearchProblem(SearchProblem[T], Generic[T]):  # Use Generic[T] to ma
         for i, agent_pos in enumerate(state.agents_positions):
             agent_pos_after_action = self.agent_position_after_action(agent_pos, joint_actions[i])
             agents_positions_after_joint_actions.append(agent_pos_after_action)
-        # print("agents_positions_after_joint_actions", agents_positions_after_joint_actions)
-
         return self.no_duplicate_in(agents_positions_after_joint_actions)
 
     
@@ -205,7 +181,6 @@ class SimpleSearchProblem(SearchProblem[T], Generic[T]):  # Use Generic[T] to ma
             # print("joint_actions", joint_actions)
            
             if self.are_valid_joint_actions(state, joint_actions):
-                # If so, yield the joint_actions
                 yield joint_actions
     
     def get_successor_state(self
@@ -213,7 +188,6 @@ class SimpleSearchProblem(SearchProblem[T], Generic[T]):  # Use Generic[T] to ma
                             , joint_actions: Tuple[Action, ...]) -> WorldState:
         """The successor state of the given state after applying the given joint actions."""
         self.world.set_state(state)
-        # print("world.step()")
         self.world.step(list(joint_actions))
         successor_state = self.world.get_state()
         # print("successor_state", successor_state)
@@ -222,7 +196,6 @@ class SimpleSearchProblem(SearchProblem[T], Generic[T]):  # Use Generic[T] to ma
     def get_successors(self
                        , state: WorldState
                        , visited: set = None
-                    #    , corners_reached: list[Position] = None
                        , objectives_reached_before_successor: list[Position] = None
                        ):
         # - N'oubliez pas de jeter un oeil aux méthodes de la classe World (set_state, done, step, available_actions, ...)
@@ -259,7 +232,6 @@ class SimpleSearchProblem(SearchProblem[T], Generic[T]):  # Use Generic[T] to ma
             except ValueError:
                 # print("ValueError: World is done, cannot step anymore")
                 continue
-            # print_items("visited", visited)
             if isinstance(self, CornerSearchProblem):
                 objectives_reached_by_successor = self.update_corners_reached(copy.deepcopy(objectives_reached_before_successor)
                                                               , joint_actions
@@ -270,32 +242,23 @@ class SimpleSearchProblem(SearchProblem[T], Generic[T]):  # Use Generic[T] to ma
                                                               , joint_actions
                                                               , successor_state.agents_positions
                                                               )
-            # print("objectives_reached_by_successor", objectives_reached_by_successor)
             if was(successor_state
                     , objectives_reached_by_successor
                    , visited):
-                # print(successor_state, "was visited")
                 continue
-            
             if isinstance(self, CornerSearchProblem):
                 # Compute the cost of the new state
                 cost = self.heuristic(successor_state, objectives_reached_by_successor)
-                # print("yielding", successor_state, joint_actions, cost, objectives_reached_by_successor)
                 yield successor_state, joint_actions, cost, objectives_reached_by_successor
             elif isinstance(self, GemSearchProblem):
                 # Compute the cost of the new state
                 cost = self.heuristic(successor_state, objectives_reached_by_successor)
-                # print
                 yield successor_state, joint_actions, cost, objectives_reached_by_successor
             elif not isinstance(self, CornerSearchProblem) and not isinstance(self, GemSearchProblem):
                 # Compute the cost of the new state
                 cost = self.heuristic(successor_state)
-                # Yield the new state, the joint_actions taken, and the cost
-                # print("yielding", successor_state, joint_actions, cost)
                 yield successor_state, joint_actions, cost #todo must not change for test
         self.world.set_state(real_state)
-        # print("self.world.get_state()", self.world.get_state())
-
 
     def manhattan_distance(self, pos1: Position, pos2: Position) -> float:
         """The Manhattan distance between two positions"""
@@ -304,16 +267,10 @@ class SimpleSearchProblem(SearchProblem[T], Generic[T]):  # Use Generic[T] to ma
     def average_manhattan_distance_from_agents_to_exits(self, state: WorldState) -> float:
         """The average Manhattan distance from each agent to each exit
         divided by the number of agents"""
-        # print("average_manhattan_distance_from_agents_to_exits()")
-        # print("state", state)
-        # print("state.agents_positions", state.agents_positions)
-        # print("self.world.exit_pos", self.world.exit_pos)
         # Create a list of the agents' positions
         agents_positions = state.agents_positions
-        # print("agents_positions", agents_positions)
         # Create a list of the exits' positions
         exit_positions = self.world.exit_pos
-        # print("exit_positions", exit_positions)
         # For each agent, compute its Manhattan distance to each exit
         total_distance = 0
         for agent_pos in agents_positions:
@@ -329,20 +286,15 @@ class SimpleSearchProblem(SearchProblem[T], Generic[T]):  # Use Generic[T] to ma
                   ) -> float:
         """Manhattan distance for each agent to the closest exit"""
         agent_positions = self.world.agents_positions
-        # print("agent_positions", agent_positions)
         exit_positions = self.world.exit_pos
-        # print("exit_positions", exit_positions)
-        # for each agent, compute its closest exit, if exit 
-        # min_distance_pairing_result = min_distance_pairing(agent_positions, exit_positions)
-        # total_distance = min_distance_pairing_result[2]
         total_distance = self.average_manhattan_distance_from_agents_to_exits(state)
         # problem:  if agent has to get away from exit to get around a wall to reach the exit, a star chooses for him to stay in place
         # tie breaking with the last actions 
+        # a last action STAY agent (if he had other options, but we don't take that into account here for simplicity) could have moved
+        # so he actually lost 1 turn
         # for each action, if it was STAY
         # and if the agent is not on an exit
         # , add 1 to the total distance
-        # because the agent (if he had other options, but we don't take that into account here for simplicity) could have moved
-        # so he actually lost 1 turn
         if last_actions:
             for i, action in enumerate(last_actions):
                 if action == Action.STAY and agent_positions[i] not in exit_positions:
