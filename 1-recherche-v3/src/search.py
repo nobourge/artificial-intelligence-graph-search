@@ -154,14 +154,14 @@ def tree_search(problem: SearchProblem, mode: str) -> Optional[Solution]:
 
         for successor_tuple in successors:  
             if isinstance(problem, CornerSearchProblem) or isinstance(problem, GemSearchProblem):
-                successor, action, cost, objectives_reached = successor_tuple
+                successor, successor_actions, cost, objectives_reached = successor_tuple
             else:
-                successor, action, cost = successor_tuple
+                successor, successor_actions, cost = successor_tuple
                 objectives_reached = None
             # print(successor)
             # print("actions: ", actions)
             # print("action: ", action)
-            new_actions = actions + [action]
+            new_actions = actions + [successor_actions]
             # print("new_actions: ", new_actions)
             if mode == "astar":
                 
@@ -175,7 +175,7 @@ def tree_search(problem: SearchProblem, mode: str) -> Optional[Solution]:
                                          , objectives_reached)
                                         , total_cost)
                 else:
-                    successor_cost = problem.heuristic(successor)
+                    successor_cost = problem.heuristic(successor, successor_actions)
                     total_cost = cost + successor_cost
                     data_structure.push((successor
                                          , new_actions)

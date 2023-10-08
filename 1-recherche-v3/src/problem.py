@@ -57,6 +57,8 @@ def min_distance_pairing(list_1
             paired_points.append((list_1[i], list_2[j]))
             distances.append(cost_matrix[i, j])
             min_total_distance += cost_matrix[i, j]
+        print("paired_points", paired_points)
+        print("distances", distances)
         
         return paired_points, distances, min_total_distance
 
@@ -298,19 +300,54 @@ class SimpleSearchProblem(SearchProblem[T], Generic[T]):  # Use Generic[T] to ma
     def manhattan_distance(self, pos1: Position, pos2: Position) -> float:
         """The Manhattan distance between two positions"""
         return abs(pos1[0] - pos2[0]) + abs(pos1[1] - pos2[1])
+
+    def average_manhattan_distance_from_agents_to_exits(self, state: WorldState) -> float:
+        """The average Manhattan distance from each agent to each exit
+        divided by the number of agents"""
+        # print("average_manhattan_distance_from_agents_to_exits()")
+        # print("state", state)
+        # print("state.agents_positions", state.agents_positions)
+        # print("self.world.exit_pos", self.world.exit_pos)
+        # Create a list of the agents' positions
+        agents_positions = state.agents_positions
+        # print("agents_positions", agents_positions)
+        # Create a list of the exits' positions
+        exit_positions = self.world.exit_pos
+        # print("exit_positions", exit_positions)
+        # For each agent, compute its Manhattan distance to each exit
+        total_distance = 0
+        for agent_pos in agents_positions:
+            for exit_pos in exit_positions:
+                total_distance += self.manhattan_distance(agent_pos, exit_pos)
+        # Divide the total distance by the number of agents
+        average_distance = total_distance / len(agents_positions)
+        return average_distance
     
-    # def agent_closest_exit(self, agent_pos: Position) -> float:
-    
-   
-    def heuristic(self, state: WorldState) -> float:
+    def heuristic(self
+                  , state: WorldState
+                  , last_actions: Tuple[Action, ...] = None
+                  ) -> float:
         """Manhattan distance for each agent to the closest exit"""
         agent_positions = self.world.agents_positions
         # print("agent_positions", agent_positions)
         exit_positions = self.world.exit_pos
         # print("exit_positions", exit_positions)
         # for each agent, compute its closest exit, if exit 
-        min_distance_pairing_result = min_distance_pairing(agent_positions, exit_positions)
-        return min_distance_pairing_result[2]
+        # min_distance_pairing_result = min_distance_pairing(agent_positions, exit_positions)
+        # total_distance = min_distance_pairing_result[2]
+        total_distance = self.average_manhattan_distance_from_agents_to_exits(state)
+        # problem:  if agent has to get away from exit to get around a wall to reach the exit, a star chooses for him to stay in place
+        # tie breaking with the last actions 
+        # for each action, if it was STAY
+        # and if the agent is not on an exit
+        # , add 1 to the total distance
+        # because the agent (if he had other options, but we don't take that into account here for simplicity) could have moved
+        # so he actually lost 1 turn
+        if last_actions:
+            for i, action in enumerate(last_actions):
+                if action == Action.STAY and agent_positions[i] not in exit_positions:
+                    total_distance += 1
+        return total_distance
 
 class CornerProblemState:
     def __init__(self, world_state: WorldState):
@@ -336,9 +373,6 @@ class CornerSearchProblem(SimpleSearchProblem[WorldState]):
         corners_to_exits_manhattan_distances = []
         exit_positions = self.world.exit_pos
         min_distance_pairing_result, distances, min_total_distance = min_distance_pairing(self.corners, exit_positions)
-        # for corner in self.corners:
-        #     corner_to_exits_manhattan_distances.
-        # print("distances", distances)
         return distances
     
     def update_corner_reached(self
@@ -361,13 +395,6 @@ class CornerSearchProblem(SimpleSearchProblem[WorldState]):
                     corners_reached.append(agent_position)
 
         return corners_reached
-
-
-    
-    # def check_corners_reached(self
-    #                             , corners_reached: list[Position]
-    #                             , state: WorldState) -> bool:
-        
 
     def all_corners_reached(self
                             , state
@@ -414,23 +441,12 @@ class CornerSearchProblem(SimpleSearchProblem[WorldState]):
         corners_to_reach = [corner for corner in self.corners if corner not in corners_reached]
         # print("corners_to_reach", corners_to_reach)
 
-        # minimum distance pairing between agents and corners
-        
         cost = balanced_multi_salesmen_greedy_tsp(corners_to_reach
                                                   , len(agents_positions)
                                                   , agents_positions
                                                   , self.world.exit_pos
                                                   )[2]
         return cost
-
-    # def get_successors(self
-    #                    , state: WorldState
-    #                       , visited: set = None
-    #                         , corners_reached: list[Position] = None
-    #                    ) -> Iterable[Tuple[CornerProblemState, Action, float]]:
-    #     self.nodes_expanded += 1
-    #     # use SimpleSearchProblem.get_successors()
-    #     return SimpleSearchProblem.get_successors(self, state, visited, corners_reached)
 
 class GemProblemState:
     """The state of the GemSearchProblem"""
@@ -464,7 +480,6 @@ class GemSearchProblem(SimpleSearchProblem[WorldState]):
 
     def is_goal_state(self
                       , state
-                    #   , gems_collected: list[Position]
                       ) -> bool:
         return self.all_gems_collected(state) and super().is_goal_state(state)
 
@@ -480,41 +495,6 @@ class GemSearchProblem(SimpleSearchProblem[WorldState]):
         # print("state.gems_collected", state.gems_collected)
         # print("self.world.exit_pos", self.world.exit_pos)
         # print("self.world.n_gems", self.world.n_gems)
-
-        # cost = 0.0
-
-        # # Create a list of the agents' positions
-        # agents_positions = state.agents_positions
-        # print("agents_positions", agents_positions)
-
-        # if not self.all_gems_collected(state):
-        #     # Create a list of the uncollected gems
-        #     uncollected_gems_positions = []
-        #     for i, gem_collected in enumerate(state.gems_collected):
-        #         if gem_collected == 0:
-        #             uncollected_gems_positions.append(self.world.gems[i][0])
-        #     print("uncollected_gems_positions", uncollected_gems_positions)
-
-        #     # minimum distance pairing between agents and uncollected gems
-        #     agents_to_gems_min_distance_pairing_result = min_distance_pairing(agents_positions, uncollected_gems_positions)
-        #     print("agents_to_gems_min_distance_pairing_result", agents_to_gems_min_distance_pairing_result)
-        #     # add the minimum total distance to the heuristic
-        #     min_total_distance = agents_to_gems_min_distance_pairing_result[2]
-        #     # exit < gem collection
-        #     uncollected_gems_cost = min_total_distance*2
-        #     cost += uncollected_gems_cost
-    
-
-        # # Create a list of the exit positions
-        # exit_positions = self.world.exit_pos
-        # # print("exit_positions", exit_positions)
-        # # minimum distance pairing between agents and exits
-        # agents_to_exits_min_distance_pairing_result = min_distance_pairing(agents_positions, exit_positions)
-        # print("agents_to_exits_min_distance_pairing_result", agents_to_exits_min_distance_pairing_result)
-        # # add the minimum total distance to the heuristic
-        # min_total_distance = agents_to_exits_min_distance_pairing_result[2]
-        # exit_cost = min_total_distance
-        # cost += exit_cost
 
         gems_to_collect = [gem[0] for gem in self.world.gems if not gem[0] in gems_collected]
         # print("gems_to_collect", gems_to_collect)
